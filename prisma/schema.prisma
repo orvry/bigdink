@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TournamentStatus {
+  DRAFT
+  LIVE
+  COMPLETED
+}
+
+enum GameStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+}
+
+model Tournament {
+  id          String   @id @default(cuid())
+  name        String
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+
+  status      TournamentStatus @default(DRAFT)
+
+  brackets    Bracket[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tournaments")
+}
+
+model Bracket {
+  id             String @id @default(cuid())
+
+  tournamentId   String
+  tournament     Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  name           String
+  description    String?
+
+  teams          Team[]
+  games          Game[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([tournamentId])
+  @@map("brackets")
+}
+
+model Team {
+  id          String @id @default(cuid())
+
+  bracketId   String
+  bracket     Bracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+
+  teamName    String
+
+  playerOne   String
+  playerTwo   String?
+
+  seed        Int?
+
+  standings   TeamStanding?
+
+  homeGames   Game[] @relation("TeamA")
+  awayGames   Game[] @relation("TeamB")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([bracketId])
+  @@map("teams")
+}
+
+model Game {
+  id              String @id @default(cuid())
+
+  bracketId       String
+  bracket         Bracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+
+  teamAId         String
+  teamBId         String
+
+  teamA           Team @relation("TeamA", fields: [teamAId], references: [id])
+  teamB           Team @relation("TeamB", fields: [teamBId], references: [id])
+
+  scheduledAt     DateTime?
+
+  status          GameStatus @default(SCHEDULED)
+
+  currentScoreA   Int @default(0)
+  currentScoreB   Int @default(0)
+
+  winnerId        String?
+
+  scoreHistory    ScoreHistory[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([bracketId])
+  @@index([teamAId])
+  @@index([teamBId])
+  @@index([status])
+  @@map("games")
+}
+
+model ScoreHistory {
+  id          String @id @default(cuid())
+
+  gameId      String
+  game        Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  teamAScore  Int
+  teamBScore  Int
+
+  createdAt   DateTime @default(now())
+
+  @@index([gameId])
+  @@map("score_history")
+}
+
+model TeamStanding {
+  id              String @id @default(cuid())
+
+  teamId          String @unique
+  team            Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  wins            Int @default(0)
+  losses          Int @default(0)
+
+  pointsFor       Int @default(0)
+  pointsAgainst   Int @default(0)
+
+  pointDiff       Int @default(0)
+
+  ranking         Int?
+
+  updatedAt       DateTime @updatedAt
+
+  @@index([ranking])
+  @@map("team_standings")
+}
