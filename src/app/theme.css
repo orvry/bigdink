@@ -1,0 +1,15 @@
+:root {
+  color-scheme: light dark;
+  --bg: #F3F6F1; --ink: #10231A; --card: #FFFFFF; --line: #D5DED7; --line2: #B8C6BD;
+  --muted: #4A5A50; --chip: #E3EAE5; --green: #1F7A4D; --link: #1F7A4D;
+  --solid: #10231A; --on-solid: #FFFFFF; --live: #10231A; --on-live: #D9F24A;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0E1A14; --ink: #E8F0EA; --card: #17261E; --line: #2A3C32; --line2: #44594D;
+    --muted: #A3B5AA; --chip: #223329; --green: #1F7A4D; --link: #5FD08F;
+    --solid: #E8F0EA; --on-solid: #10231A; --live: #D9F24A; --on-live: #10231A;
+  }
+}
+/* Loaded after globals.css so it wins over the create-next-app body colors */
+body { background: var(--bg); color: var(--ink); }

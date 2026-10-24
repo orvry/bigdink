@@ -6,20 +6,37 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma skills sync || exit 0",
+    "contract:emit": "prisma contract emit"
   },
   "dependencies": {
+    "@hookform/resolvers": "^6.0.0",
+    "@prisma/client": "^7.10.1",
+    "@prisma/orm-postgres": "^8.0.0-rc.20",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
+    "@tanstack/react-table": "^9.3.1",
+    "date-fns": "^4.4.0",
+    "dotenv": "^18.0.9",
     "next": "16.4.3",
+    "next-auth": "^4.24.15",
+    "pdf-lib": "^1.17.1",
+    "pusher": "^5.3.4",
+    "pusher-js": "^8.6.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "react-hook-form": "^7.90.0"
   },
   "devDependencies": {
+    "@prisma/cli-engine": "^0.9.0",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "prisma": "^8.0.0-rc.27",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

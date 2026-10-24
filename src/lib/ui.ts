@@ -1,0 +1,8 @@
+export const muted = 'text-[color:var(--muted)]'
+export const card = 'rounded-2xl border border-[color:var(--line)] bg-[var(--card)] p-4'
+export const btn = 'inline-flex h-12 items-center justify-center rounded-xl bg-[#1F7A4D] px-5 font-bold text-white'
+export const btn2 = 'inline-flex h-12 items-center justify-center rounded-xl border border-[color:var(--ink)] px-5 font-semibold text-[color:var(--ink)] disabled:opacity-50'
+export const input = 'h-12 w-full rounded-xl border border-[color:var(--line2)] bg-[var(--card)] px-3 text-base'
+export const label = 'flex flex-col gap-1.5 text-sm font-semibold text-[color:var(--muted)]'
+export const num = 'font-[family-name:var(--font-display)] font-bold leading-none'
+export const ROUNDS = ['Round robin', 'Semifinals', 'Final', '3rd place']
