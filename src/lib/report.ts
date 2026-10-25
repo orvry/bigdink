@@ -1,60 +1,14 @@
-import { PDFDocument, StandardFonts, rgb, type Color, type PDFFont, type PDFPage } from 'pdf-lib'
-import type { Match } from './types'
+import { Doc, M, INK, MUTED, GREEN } from './pdf'
+import type { Match, PlayerStat } from './types'
 import type { Row } from './standings'
 
 export type ReportData = {
+  orgName: string
   tournament: { name: string; date?: string | null; points_to_win: number; win_by: number }
-  brackets: { name: string; rows: Row[]; games: Match[] }[] // rows = computeStandings output, games = round-robin matches
+  brackets: { name: string; rows: Row[]; games: Match[]; mvps: PlayerStat[] }[]
   playoffs: Match[]
+  mvps: PlayerStat[] // overall ranking by points won
   generatedAt: string
-}
-
-const W = 595.28, H = 841.89, M = 48
-const INK = rgb(0.063, 0.137, 0.102), MUTED = rgb(0.29, 0.353, 0.314), GREEN = rgb(0.122, 0.478, 0.302), LINE = rgb(0.835, 0.871, 0.843)
-
-// Standard PDF fonts only cover Latin-1, so swap anything else for a safe character.
-const clean = (s: unknown) =>
-  String(s ?? '').replace(/[\u2013\u2014]/g, '-').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[^\x20-\x7E\xA0-\xFF]/g, '?')
-
-class Doc {
-  pdf!: PDFDocument
-  font!: PDFFont
-  bold!: PDFFont
-  page!: PDFPage
-  y = 0
-  static async create() {
-    const d = new Doc()
-    d.pdf = await PDFDocument.create()
-    d.font = await d.pdf.embedFont(StandardFonts.Helvetica)
-    d.bold = await d.pdf.embedFont(StandardFonts.HelveticaBold)
-    d.newPage()
-    return d
-  }
-  newPage() { this.page = this.pdf.addPage([W, H]); this.y = H - M }
-  ensure(h: number) { if (this.y - h < M + 20) this.newPage() }
-  fit(t: string, f: PDFFont, size: number, maxW: number) {
-    let s = clean(t)
-    if (f.widthOfTextAtSize(s, size) <= maxW) return s
-    while (s.length > 1 && f.widthOfTextAtSize(s + '...', size) > maxW) s = s.slice(0, -1)
-    return s + '...'
-  }
-  text(t: unknown, x: number, o: { size?: number; bold?: boolean; color?: Color; maxW?: number; center?: number } = {}) {
-    const size = o.size ?? 10, f = o.bold ? this.bold : this.font
-    const s = o.maxW ? this.fit(String(t ?? ''), f, size, o.maxW) : clean(t)
-    if (o.center) x = x + (o.center - f.widthOfTextAtSize(s, size)) / 2
-    this.page.drawText(s, { x, y: this.y - size, size, font: f, color: o.color ?? INK })
-  }
-  rule() { this.page.drawLine({ start: { x: M, y: this.y }, end: { x: W - M, y: this.y }, thickness: 0.5, color: LINE }) }
-  gap(n: number) { this.y -= n }
-  heading(t: string) { this.ensure(40); this.gap(14); this.text(t, M, { size: 14, bold: true, color: GREEN }); this.gap(22) }
-  footers() {
-    const pages = this.pdf.getPages()
-    pages.forEach((p, i) => {
-      p.drawText('Pickleball Live', { x: M, y: 28, size: 8, font: this.font, color: MUTED })
-      const label = `Page ${i + 1} of ${pages.length}`
-      p.drawText(label, { x: W - M - this.font.widthOfTextAtSize(label, 8), y: 28, size: 8, font: this.font, color: MUTED })
-    })
-  }
 }
 
 const name = (m: Match, n: 1 | 2) => (n === 1 ? m.team1?.name : m.team2?.name) ?? 'TBD'
@@ -91,7 +45,7 @@ export async function buildReport(r: ReportData): Promise<Uint8Array> {
   const played = all.filter((m) => m.status === 'final').length
 
   d.text(t.name, M, { size: 24, bold: true }); d.gap(32)
-  d.text(`Tournament report${t.date ? ` · ${t.date}` : ''}`.replace('·', '-'), M, { color: MUTED }); d.gap(14)
+  d.text(`${r.orgName} - tournament report${t.date ? ` - ${t.date}` : ''}`, M, { color: MUTED }); d.gap(14)
   d.text(`Games to ${t.points_to_win}, win by ${t.win_by}. ${played} of ${all.length} games played. Generated ${r.generatedAt}.`, M, { color: MUTED, size: 9 }); d.gap(10)
   d.rule()
 
@@ -101,10 +55,27 @@ export async function buildReport(r: ReportData): Promise<Uint8Array> {
   if (fin) {
     const champ = fin.winner_id === fin.team1_id ? fin.team1 : fin.team2
     const runner = fin.winner_id === fin.team1_id ? fin.team2 : fin.team1
-    d.text('Champion', M, { size: 9, color: MUTED }); d.gap(13); d.text(champ?.name, M, { size: 20, bold: true }); d.gap(26)
+    d.text('Champions', M, { size: 9, color: MUTED }); d.gap(13); d.text(champ?.name, M, { size: 20, bold: true }); d.gap(26)
+    const names = [champ?.player1, champ?.player2].filter(Boolean).join(' & ')
+    if (names) { d.text(names, M, { color: MUTED }); d.gap(15) }
     d.text(`Runner-up: ${runner?.name ?? 'TBD'}`, M); d.gap(15)
     if (third) { const tw = third.winner_id === third.team1_id ? third.team1 : third.team2; d.text(`Third place: ${tw?.name}`, M); d.gap(15) }
   } else { d.text('The final has not been played yet.', M, { color: MUTED }); d.gap(16) }
+
+  d.heading(fin ? 'Most valuable players' : 'Most valuable players (so far)')
+  if (r.mvps.length) {
+    const top = r.mvps[0].points
+    d.text('#', M, { size: 8, bold: true, color: MUTED }); d.text('Player', M + 22, { size: 8, bold: true, color: MUTED })
+    d.text('Team', M + 200, { size: 8, bold: true, color: MUTED }); d.text('Points won', M + 400, { size: 8, bold: true, color: MUTED, right: 99 })
+    d.gap(14); d.rule(); d.gap(4)
+    r.mvps.slice(0, 5).forEach((p, i) => {
+      d.ensure(20)
+      d.text(i + 1, M, { bold: true }); d.text(p.player + (p.points === top ? '  (MVP)' : ''), M + 22, { bold: p.points === top, maxW: 172 })
+      d.text(p.team, M + 200, { maxW: 190, color: MUTED }); d.text(p.points, M + 400, { right: 99 })
+      d.gap(17)
+    })
+    d.text('MVP is the player who won the most points, from the player taps scorers record. Ties share the title.', M, { size: 7.5, color: MUTED }); d.gap(12)
+  } else { d.text('No player points recorded.', M, { color: MUTED }); d.gap(16) }
 
   for (const b of r.brackets) {
     d.heading(`Bracket ${b.name} standings`)
@@ -127,7 +98,10 @@ export async function buildReport(r: ReportData): Promise<Uint8Array> {
       d.gap(note ? 12 : 6)
     })
     d.gap(4)
-    d.text('Ranking: most wins; two-way tie goes to the head-to-head winner; three or more tied go by total round-robin points.', M, { size: 7.5, color: MUTED }); d.gap(14)
+    d.ensure(40)
+    d.text('W = wins.  L = losses.  PF = points for (total points scored).  +/- = points scored minus points allowed.', M, { size: 7.5, color: MUTED }); d.gap(11)
+    d.text('Ranking: most wins; two-way tie goes to the head-to-head winner; three or more tied go by total round-robin points (PF).', M, { size: 7.5, color: MUTED }); d.gap(11)
+    if (b.mvps.length) { d.text(`Bracket ${b.name} MVP: ${b.mvps.map((p) => `${p.player} (${p.team})`).join(', ')} - ${b.mvps[0].points} points`, M, { size: 8.5, bold: true, color: INK }); d.gap(14) } else d.gap(6)
     d.heading(`Bracket ${b.name} round-robin results`)
     gameRows(d, b.games, false)
   }

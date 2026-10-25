@@ -1,25 +1,29 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { getOrg } from '@/lib/auth'
 import type { Bracket, Match, Tournament } from '@/lib/types'
 
 export const MATCH_SELECT =
   '*, team1:teams!matches_team1_id_fkey(id,name,seed,player1,player2), team2:teams!matches_team2_id_fkey(id,name,seed,player1,player2), tournament:tournaments(points_to_win,win_by)'
 
-export async function getContext() {
+/** The group, its tournaments, the active tournament and that tournament's brackets. */
+export const getContext = cache(async (slug: string) => {
+  const org = await getOrg(slug)
   const sb = await createClient()
-  const { data: ts } = await sb.from('tournaments').select('*').order('created_at', { ascending: false })
+  const { data: ts } = await sb.from('tournaments').select('*').eq('org_id', org.id).order('created_at', { ascending: false })
   const tournaments = (ts ?? []) as Tournament[]
   const active = tournaments.find((t) => t.status === 'active') ?? tournaments[0] ?? null
   const { data: bs } = active
     ? await sb.from('brackets').select('*').eq('tournament_id', active.id).order('name')
     : { data: [] as Bracket[] }
-  return { sb, tournaments, active, brackets: (bs ?? []) as Bracket[] }
-}
+  return { sb, org, tournaments, active, brackets: (bs ?? []) as Bracket[] }
+})
 
 export const pickBracket = (brackets: Bracket[], b?: string): Bracket => brackets.find((x) => x.name === b) ?? brackets[0]
 
 /** b = 'A' | 'B' | ... for a bracket, or 'P' for the playoff games (no bracket). */
-export async function scopedMatches(b?: string) {
-  const ctx = await getContext()
+export async function scopedMatches(slug: string, b?: string) {
+  const ctx = await getContext(slug)
   const isP = b === 'P'
   // null for playoffs; typed as Bracket so pages can read bracket.name after their own isP check
   const bracket = (isP ? null : pickBracket(ctx.brackets, b)) as Bracket

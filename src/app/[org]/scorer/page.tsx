@@ -8,16 +8,17 @@ import { muted } from '@/lib/ui'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ScorerHome({ searchParams }: { searchParams: Promise<{ b?: string }> }) {
-  await requireRole(['admin', 'scorer'])
+export default async function ScorerHome({ params, searchParams }: { params: Promise<{ org: string }>; searchParams: Promise<{ b?: string }> }) {
+  const { org: slug } = await params
+  await requireRole(slug, ['admin', 'scorer'])
   const { b } = await searchParams
-  const { brackets, bracket, isP, matches } = await scopedMatches(b)
+  const { brackets, bracket, isP, matches } = await scopedMatches(slug, b)
   if (!bracket && !isP) return <p>No bracket yet.</p>
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Summary', href: '/' }, { label: 'Score' }]} />
+      <Breadcrumbs items={[{ label: 'Summary', href: `/${slug}` }, { label: 'Score' }]} />
       <h1 className="text-2xl font-bold md:text-3xl">Pick a game to score</h1>
-      <BracketTabs base="/scorer" brackets={brackets} current={isP ? 'P' : bracket.name} playoffs />
+      <BracketTabs base={`/${slug}/scorer`} brackets={brackets} current={isP ? 'P' : bracket.name} playoffs />
       <div className="grid gap-2 md:grid-cols-2">
         {matches.map((m) => {
           const ready = m.team1_id && m.team2_id && m.status !== 'final'
@@ -29,7 +30,7 @@ export default async function ScorerHome({ searchParams }: { searchParams: Promi
                 {m.status === 'scheduled' && !ready ? <span className="rounded-full bg-[var(--chip)] px-3 py-1.5 text-xs font-bold">Waiting</span> : <StatusChip status={m.status} />}</div>
             </div>
           )
-          return ready ? <Link key={m.id} href={`/scorer/${m.id}`}>{body}</Link> : <div key={m.id}>{body}</div>
+          return ready ? <Link key={m.id} href={`/${slug}/scorer/${m.id}`}>{body}</Link> : <div key={m.id}>{body}</div>
         })}
       </div>
       {matches.length === 0 && <p className={`text-sm ${muted}`}>No games here yet. An admin adds them under Admin, Matches.</p>}

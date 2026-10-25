@@ -28,7 +28,7 @@ export default function LiveBoard({ initial, name1, name2, ptw, wb }: { initial:
   const leader = m.score1 === m.score2 ? 0 : m.score1 > m.score2 ? 1 : 2
   const winner = m.status === 'final' ? (m.winner_id === m.team1_id ? name1 : name2) : null
   const detail =
-    m.status === 'final' ? `${winner} wins ${Math.max(m.score1, m.score2)}–${Math.min(m.score1, m.score2)}`
+    m.status === 'final' ? `${initial.round === 'Final' ? `${winner} are the tournament champions, winning ` : `${winner} wins `}${Math.max(m.score1, m.score2)}–${Math.min(m.score1, m.score2)}`
     : m.status === 'paused' ? 'Play is paused. The score will resume shortly.'
     : m.status === 'live' ? (gamePoint(m.score1, m.score2, ptw, wb) ? 'Game point' : 'Game in progress')
     : `Not started${initial.starts_at ? ` · scheduled ${initial.starts_at}` : ''}`

@@ -3,28 +3,38 @@ import { computeStandings } from '@/lib/standings'
 import BracketTabs from '@/components/BracketTabs'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import { muted } from '@/lib/ui'
+import type { Match, Team } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
-export default async function Standings({ searchParams }: { searchParams: Promise<{ b?: string }> }) {
+export default async function Standings({ params, searchParams }: { params: Promise<{ org: string }>; searchParams: Promise<{ b?: string }> }) {
+  const { org: slug } = await params
   const { b } = await searchParams
-  const { sb, brackets } = await getContext()
+  const { sb, brackets } = await getContext(slug)
   const bracket = pickBracket(brackets, b)
   if (!bracket) return <p>No bracket yet.</p>
   const [{ data: teams }, { data: matches }] = await Promise.all([
     sb.from('teams').select('*').eq('bracket_id', bracket.id),
     sb.from('matches').select('*').eq('bracket_id', bracket.id).eq('round', 'Round robin'),
   ])
-  const rows = computeStandings(teams ?? [], matches ?? [])
+  const rows = computeStandings((teams ?? []) as Team[], (matches ?? []) as Match[])
   const th = 'px-3 py-2 font-semibold'
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Summary', href: '/' }, { label: 'Standings' }]} />
+      <Breadcrumbs items={[{ label: 'Summary', href: `/${slug}` }, { label: 'Standings' }]} />
       <h1 className="text-2xl font-bold md:text-3xl">Standings</h1>
-      <BracketTabs base="/standings" brackets={brackets} current={bracket.name} />
+      <BracketTabs base={`/${slug}/standings`} brackets={brackets} current={bracket.name} />
       <div className="overflow-x-auto">
         <table className="w-full min-w-[22rem] text-left text-[15px]">
-          <thead className={`text-xs ${muted}`}><tr><th className={th}>#</th><th className={th}>Team</th><th className={th}>W</th><th className={th}>L</th><th className={th}>PF</th><th className={th}>+/−</th></tr></thead>
+          <thead className={`text-xs ${muted}`}>
+            <tr>
+              <th className={th}>#</th><th className={th}>Team</th>
+              <th className={th}><abbr title="Wins">W</abbr></th>
+              <th className={th}><abbr title="Losses">L</abbr></th>
+              <th className={th}><abbr title="Points for: total points scored">PF</abbr></th>
+              <th className={th}><abbr title="Point difference: points scored minus points allowed">+/−</abbr></th>
+            </tr>
+          </thead>
           <tbody>
             {rows.map((r, i) => (
               <tr key={r.team.id} className={`bg-[var(--card)] ${i < 2 ? 'border-l-4 border-l-[#1F7A4D]' : 'border-l-4 border-l-transparent'} ${i === 1 ? 'border-b-2 border-b-[color:var(--ink)]' : 'border-b border-b-[color:var(--line)]'}`}>
@@ -37,10 +47,16 @@ export default async function Standings({ searchParams }: { searchParams: Promis
           </tbody>
         </table>
       </div>
+      <dl className={`grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2 ${muted}`}>
+        <div><dt className="inline font-bold text-[color:var(--ink)]">W</dt> <dd className="inline">Wins: games the team won.</dd></div>
+        <div><dt className="inline font-bold text-[color:var(--ink)]">L</dt> <dd className="inline">Losses: games the team lost.</dd></div>
+        <div><dt className="inline font-bold text-[color:var(--ink)]">PF</dt> <dd className="inline">Points for: total points the team scored.</dd></div>
+        <div><dt className="inline font-bold text-[color:var(--ink)]">+/−</dt> <dd className="inline">Point difference: points scored minus points allowed.</dd></div>
+      </dl>
       <ol className={`list-decimal pl-5 text-xs ${muted}`}>
         <li>Most wins.</li>
         <li>Two teams tied: the team that won their head-to-head game ranks higher.</li>
-        <li>Three or more tied: most total points in the round robin.</li>
+        <li>Three or more tied: most total points (PF) in the round robin.</li>
         <li>Only the top 2 teams in each bracket advance to the semifinals.</li>
       </ol>
     </>
