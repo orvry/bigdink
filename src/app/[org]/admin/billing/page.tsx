@@ -47,6 +47,7 @@ export default async function Billing({ params, searchParams }: { params: Promis
         <ActionForm action={startExtendPayment} keepOnSuccess className={`${card} flex flex-col gap-3`}>
           <h2 className="font-bold">Add more days</h2>
           <input type="hidden" name="org_id" value={org.id} />
+          {PAYMENTS_MODE === 'manual' && <p role="note" className="rounded-xl bg-[var(--chip)] p-3 text-sm">You pay by scanning a GCash, Maya or bank QR code and entering your reference number. An admin confirms it, and the days are added right after.</p>}
           {PAYMENTS_MODE === 'simulated' && <p role="note" className="rounded-xl bg-[#F5C84C] p-3 text-sm font-semibold text-[#10231A]">Test mode: payment is simulated and no money is charged.</p>}
           <RentalPicker pricePerDay={PRICE_PER_DAY} max={MAX_DAYS} />
           <SubmitButton pendingText="Continuing…" className={btn}>Continue to payment</SubmitButton>

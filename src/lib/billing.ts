@@ -1,7 +1,12 @@
 import type { Org } from './types'
 
-/** 'simulated' = the fake checkout page. Switch to 'paymongo' once the real integration exists. */
-export const PAYMENTS_MODE = (process.env.PAYMENTS_MODE ?? 'simulated') as 'simulated' | 'paymongo'
+/**
+ * 'manual'    = the payer scans a GCash, Maya or bank QR and a system admin confirms through the API (use this live).
+ * 'simulated' = a fake checkout page for development. 'paymongo' is reserved for later.
+ */
+export const PAYMENTS_MODE = (process.env.PAYMENTS_MODE ?? 'simulated') as 'simulated' | 'manual' | 'paymongo'
+/** Unpaid manual payments stop being accepted after this many hours. */
+export const PAYMENT_EXPIRY_HOURS = 48
 /** Price per rental day in centavos. Set RENTAL_PRICE_PER_DAY in pesos (default 500). */
 export const PRICE_PER_DAY = Math.round(Number(process.env.RENTAL_PRICE_PER_DAY ?? 500) * 100)
 export const CURRENCY = 'PHP'

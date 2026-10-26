@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireUser, roleIn } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
-import { PAYMENTS_MODE, MAX_DAYS, CURRENCY, amountFor } from '@/lib/billing'
+import { PAYMENTS_MODE, MAX_DAYS } from '@/lib/billing'
+import { createPaymentRow } from '@/lib/payments'
+import { normalizeRef } from '@/lib/payref'
 import { winReached } from '@/lib/rules'
 import { seedPlayoffs } from '@/lib/playoffs'
 import type { FormState } from '@/lib/types'
@@ -61,15 +63,11 @@ export async function startGroupPayment(_p: FormState, fd: FormData): Promise<Fo
   if (!s(fd, 'name')) return { error: 'Enter a group name.' }
   if (!/^[a-z0-9][a-z0-9-]{1,38}$/.test(slug) || RESERVED.includes(slug)) return { error: 'The address needs 2 to 39 lowercase letters, numbers or dashes, and cannot be a reserved word.' }
   if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) return { error: `Choose between 1 and ${MAX_DAYS} rental days.` }
-  const admin = adminClient()
-  const { data: taken } = await admin.from('organizations').select('id').eq('slug', slug).maybeSingle()
+  const { data: taken } = await adminClient().from('organizations').select('id').eq('slug', slug).maybeSingle()
   if (taken) return { error: 'That address is already taken.' }
-  const { data, error } = await admin.from('payments').insert({
-    user_id: user.id, purpose: 'new_group', days, amount: amountFor(days), currency: CURRENCY, provider: PAYMENTS_MODE,
-    group_name: s(fd, 'name'), group_slug: slug, group_visibility: visibility,
-  }).select('id').single()
-  if (error) return { error: error.message }
-  redirect(`/pay/${data.id}`)
+  const r = await createPaymentRow({ user_id: user.id, purpose: 'new_group', days, group_name: s(fd, 'name'), group_slug: slug, group_visibility: visibility })
+  if ('error' in r) return { error: r.error }
+  redirect(`/pay/${r.id}`)
 }
 
 /** Add more paid days to an existing group (admins only). */
@@ -79,11 +77,9 @@ export async function startExtendPayment(_p: FormState, fd: FormData): Promise<F
   const days = parseDays(fd)
   if ((await roleIn(orgId)) !== 'admin') return { error: "Only the group's admins can add more days." }
   if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) return { error: `Choose between 1 and ${MAX_DAYS} rental days.` }
-  const { data, error } = await adminClient().from('payments').insert({
-    user_id: user.id, org_id: orgId, purpose: 'extend', days, amount: amountFor(days), currency: CURRENCY, provider: PAYMENTS_MODE,
-  }).select('id').single()
-  if (error) return { error: error.message }
-  redirect(`/pay/${data.id}`)
+  const r = await createPaymentRow({ user_id: user.id, org_id: orgId, purpose: 'extend', days })
+  if ('error' in r) return { error: r.error }
+  redirect(`/pay/${r.id}`)
 }
 
 /**
@@ -109,6 +105,30 @@ export async function simulatePayment(paymentId: string, outcome: 'success' | 'f
   const { data: org } = await admin.from('organizations').select('slug').eq('id', orgId as string).single()
   refresh()
   redirect(p.purpose === 'new_group' ? `/${org?.slug}/admin` : `/${org?.slug}/admin/billing?paid=1`)
+}
+
+/**
+ * Manual payments: the payer types the reference number from their receipt. When a system admin has confirmed the same
+ * reference with the same amount (through the API), the payment completes right away. Otherwise it waits.
+ */
+export async function submitReference(_p: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser()
+  const id = s(fd, 'payment_id')
+  const ref = normalizeRef(s(fd, 'reference'))
+  if (ref.length < 6 || ref.length > 40) return { error: 'Enter the reference number exactly as shown on your payment receipt.' }
+  const admin = adminClient()
+  const { data: p } = await admin.from('payments').select('*').eq('id', id).single()
+  if (!p || p.user_id !== user.id || p.provider !== 'manual') return { error: 'Payment not found.' }
+  if (!['pending', 'submitted'].includes(p.status)) return { error: 'This payment is already closed.' }
+  if (p.expires_at && new Date(p.expires_at) < new Date()) return { error: 'This payment expired. Start a new one.' }
+  if (p.ref_attempts >= 5) return { error: 'Too many reference numbers entered. Contact support and quote your payment code.' }
+  const { error } = await admin.from('payments').update({
+    reference_number: ref, reference_submitted_at: new Date().toISOString(), status: 'submitted', ref_attempts: p.ref_attempts + 1, review_note: null,
+  }).eq('id', id)
+  if (error) return { error: /duplicate key/i.test(error.message) ? 'That reference number was already used for a payment.' : error.message }
+  await admin.rpc('match_payment_reference', { p_ref: ref }) // pays immediately if the admin already confirmed it
+  revalidatePath(`/pay/${id}`)
+  return { ok: 'Reference received. We are checking your payment.' }
 }
 
 /** Public or private, for a group or one of its tournaments. */

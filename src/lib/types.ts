@@ -26,7 +26,8 @@ export type PlayerStat = { player: string; team: string; bracketId: string | nul
 export type Expense = { id: string; tournament_id: string; spent_on: string; category: string; description: string; amount: number }
 export type Payment = {
   id: string; user_id: string; org_id: string | null; purpose: 'new_group' | 'extend'; days: number; amount: number
-  currency: string; status: 'pending' | 'paid' | 'failed' | 'cancelled'; provider: 'simulated' | 'paymongo'
+  currency: string; status: 'pending' | 'submitted' | 'paid' | 'failed' | 'cancelled'; provider: 'simulated' | 'manual' | 'paymongo'
+  pay_code: string | null; reference_number: string | null; review_note: string | null; expires_at: string | null
   group_name: string | null; group_slug: string | null; group_visibility: Visibility | null; created_at: string; paid_at: string | null
 }
 export type FeedRow = {
