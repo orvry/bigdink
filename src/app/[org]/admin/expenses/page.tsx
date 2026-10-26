@@ -15,7 +15,7 @@ export default async function Expenses({ params }: { params: Promise<{ org: stri
   await requireRole(slug, ['admin'])
   const { sb, active } = await getContext(slug)
   const base = `/${slug}`
-  const crumbs = [{ label: 'Summary', href: base }, { label: 'Admin', href: `${base}/admin` }, { label: 'Expenses' }]
+  const crumbs = [{ label: 'Group', href: base }, { label: 'Admin', href: `${base}/admin` }, { label: 'Expenses' }]
   if (!active) return <><Breadcrumbs items={crumbs} /><p>Create a tournament first.</p></>
 
   const [{ data: ex }, { data: teams }] = await Promise.all([

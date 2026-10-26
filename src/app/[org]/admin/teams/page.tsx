@@ -21,7 +21,7 @@ export default async function Teams({ params, searchParams }: { params: Promise<
   const teams = (data ?? []) as Team[]
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Summary', href: `/${slug}` }, { label: 'Admin', href: `/${slug}/admin` }, { label: 'Teams' }]} />
+      <Breadcrumbs items={[{ label: 'Group', href: `/${slug}` }, { label: 'Admin', href: `/${slug}/admin` }, { label: 'Teams' }]} />
       <h1 className="text-2xl font-bold md:text-3xl">Teams</h1>
       <BracketTabs base={`/${slug}/admin/teams`} brackets={brackets} current={bracket.name} />
       <div className="grid items-start gap-4 md:grid-cols-2">

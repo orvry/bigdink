@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getOrg } from '@/lib/auth'
 import type { Bracket, Match, Tournament } from '@/lib/types'
@@ -17,6 +18,16 @@ export const getContext = cache(async (slug: string) => {
     ? await sb.from('brackets').select('*').eq('tournament_id', active.id).order('name')
     : { data: [] as Bracket[] }
   return { sb, org, tournaments, active, brackets: (bs ?? []) as Bracket[] }
+})
+
+/** One specific tournament of a group (the public pages live under /<group>/t/<id>). */
+export const getTournamentContext = cache(async (slug: string, tid: string) => {
+  const org = await getOrg(slug)
+  const sb = await createClient()
+  const { data: t } = await sb.from('tournaments').select('*').eq('id', tid).eq('org_id', org.id).maybeSingle()
+  if (!t) notFound()
+  const { data: bs } = await sb.from('brackets').select('*').eq('tournament_id', tid).order('name')
+  return { sb, org, tournament: t as Tournament, brackets: (bs ?? []) as Bracket[] }
 })
 
 export const pickBracket = (brackets: Bracket[], b?: string): Bracket => brackets.find((x) => x.name === b) ?? brackets[0]

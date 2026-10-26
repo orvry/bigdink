@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { isRentalActive } from '@/lib/billing'
 import type { Org, Role } from '@/lib/types'
 
 export type { Role }
@@ -20,8 +21,8 @@ export async function requireUser() {
 
 export const getOrg = cache(async (slug: string): Promise<Org> => {
   const sb = await createClient()
-  const { data } = await sb.from('organizations').select('id,name,slug').eq('slug', slug).maybeSingle()
-  if (!data) notFound()
+  const { data } = await sb.from('organizations').select('id,name,slug,visibility,rental_until').eq('slug', slug).maybeSingle()
+  if (!data) notFound() // also what a private group looks like to people outside it
   return data as Org
 })
 
@@ -34,10 +35,15 @@ export const roleIn = cache(async (orgId: string): Promise<Role> => {
   return (data?.role ?? 'viewer') as Role
 })
 
-export async function requireRole(slug: string, roles: Role[]) {
+/**
+ * Sign-in + role check. When the group's rental has ended only viewing and reports remain,
+ * so pages send admins to Billing and everyone else back to the group page (unless allowInactive).
+ */
+export async function requireRole(slug: string, roles: Role[], opts: { allowInactive?: boolean } = {}) {
   const org = await getOrg(slug)
   const user = await requireUser()
   const role = await roleIn(org.id)
   if (!roles.includes(role)) redirect('/denied')
+  if (!opts.allowInactive && !isRentalActive(org)) redirect(role === 'admin' ? `/${slug}/admin/billing` : `/${slug}`)
   return { org, user, role }
 }

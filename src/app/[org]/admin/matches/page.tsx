@@ -27,7 +27,7 @@ export default async function Matches({ params, searchParams }: { params: Promis
   const rounds = isP ? ROUNDS.slice(1) : ROUNDS.slice(0, 1)
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Summary', href: `/${slug}` }, { label: 'Admin', href: `/${slug}/admin` }, { label: 'Matches' }]} />
+      <Breadcrumbs items={[{ label: 'Group', href: `/${slug}` }, { label: 'Admin', href: `/${slug}/admin` }, { label: 'Matches' }]} />
       <h1 className="text-2xl font-bold md:text-3xl">Matches</h1>
       <BracketTabs base={`/${slug}/admin/matches`} brackets={brackets} current={isP ? 'P' : bracket.name} playoffs />
       <div className="grid items-start gap-4 md:grid-cols-2">

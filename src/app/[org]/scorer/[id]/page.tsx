@@ -51,7 +51,7 @@ export default async function ScoreGame({ params }: { params: Promise<{ org: str
   }
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Summary', href: `/${slug}` }, { label: 'Score', href: `/${slug}/scorer` }, { label: `Game ${m.game_no}` }]} />
+      <Breadcrumbs items={[{ label: 'Group', href: `/${slug}` }, { label: 'Score', href: `/${slug}/scorer` }, { label: `Game ${m.game_no}` }]} />
       <div className="flex items-center justify-between gap-3">
         <p className={`text-sm ${muted}`}>Game {m.game_no} · {m.round}{m.court ? ` · Court ${m.court}` : ''} · First to {ptw}, win by {wb}</p>
         <StatusChip status={m.status} />
@@ -85,7 +85,7 @@ export default async function ScoreGame({ params }: { params: Promise<{ org: str
           </form>
         )}
         {final ? <Link href={`/${slug}/scorer`} className={`${btn} w-full`}>Back to games</Link> : null}
-        <ShareButton path={`/${slug}/live/${id}`} title={`${team1.name} vs ${team2.name}`} />
+        <ShareButton path={`/${slug}/t/${m.tournament_id}/live/${id}`} title={`${team1.name} vs ${team2.name}`} />
       </div>
       {!final && <p className={`text-xs ${muted}`}>The game can’t be ended by hand. It finishes when a team reaches {ptw} with a {wb}-point lead. Until then you can pause.</p>}
     </>

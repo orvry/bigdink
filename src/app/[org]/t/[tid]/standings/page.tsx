@@ -1,4 +1,4 @@
-import { getContext, pickBracket } from '@/lib/data'
+import { getTournamentContext, pickBracket } from '@/lib/data'
 import { computeStandings } from '@/lib/standings'
 import BracketTabs from '@/components/BracketTabs'
 import Breadcrumbs from '@/components/Breadcrumbs'
@@ -7,10 +7,10 @@ import type { Match, Team } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
-export default async function Standings({ params, searchParams }: { params: Promise<{ org: string }>; searchParams: Promise<{ b?: string }> }) {
-  const { org: slug } = await params
+export default async function Standings({ params, searchParams }: { params: Promise<{ org: string; tid: string }>; searchParams: Promise<{ b?: string }> }) {
+  const { org: slug, tid } = await params
   const { b } = await searchParams
-  const { sb, brackets } = await getContext(slug)
+  const { sb, org, brackets } = await getTournamentContext(slug, tid)
   const bracket = pickBracket(brackets, b)
   if (!bracket) return <p>No bracket yet.</p>
   const [{ data: teams }, { data: matches }] = await Promise.all([
@@ -21,9 +21,9 @@ export default async function Standings({ params, searchParams }: { params: Prom
   const th = 'px-3 py-2 font-semibold'
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Summary', href: `/${slug}` }, { label: 'Standings' }]} />
+      <Breadcrumbs items={[{ label: org.name, href: `/${slug}` }, { label: 'Tournament', href: `/${slug}/t/${tid}` }, { label: 'Standings' }]} />
       <h1 className="text-2xl font-bold md:text-3xl">Standings</h1>
-      <BracketTabs base={`/${slug}/standings`} brackets={brackets} current={bracket.name} />
+      <BracketTabs base={`/${slug}/t/${tid}/standings`} brackets={brackets} current={bracket.name} />
       <div className="overflow-x-auto">
         <table className="w-full min-w-[22rem] text-left text-[15px]">
           <thead className={`text-xs ${muted}`}>

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getContext, pickBracket, MATCH_SELECT, slotLabel } from '@/lib/data'
+import { getTournamentContext, pickBracket, MATCH_SELECT, slotLabel } from '@/lib/data'
 import { computeMvps, getChampion } from '@/lib/stats'
 import BracketTabs from '@/components/BracketTabs'
 import Breadcrumbs from '@/components/Breadcrumbs'
@@ -28,18 +28,18 @@ function Game({ m, base }: { m: Match; base: string }) {
   )
 }
 
-export default async function Bracket({ params, searchParams }: { params: Promise<{ org: string }>; searchParams: Promise<{ b?: string }> }) {
-  const { org: slug } = await params
+export default async function Bracket({ params, searchParams }: { params: Promise<{ org: string; tid: string }>; searchParams: Promise<{ b?: string }> }) {
+  const { org: slug, tid } = await params
   const { b } = await searchParams
-  const { sb, active, brackets } = await getContext(slug)
+  const { sb, org, brackets } = await getTournamentContext(slug, tid)
   const bracket = pickBracket(brackets, b)
-  const base = `/${slug}`
-  if (!active || !bracket) return <p>No bracket yet.</p>
+  const base = `/${slug}/t/${tid}`
+  if (!bracket) return <p>No bracket yet.</p>
   const [{ data: rr }, { data: po }, { data: teams }, { data: pts }] = await Promise.all([
     sb.from('matches').select(MATCH_SELECT).eq('bracket_id', bracket.id).eq('round', 'Round robin').order('game_no'),
-    sb.from('matches').select(MATCH_SELECT).eq('tournament_id', active.id).is('bracket_id', null).order('game_no'),
+    sb.from('matches').select(MATCH_SELECT).eq('tournament_id', tid).is('bracket_id', null).order('game_no'),
     sb.from('teams').select('*').eq('bracket_id', bracket.id),
-    sb.from('player_points').select('team_id,player,points').eq('tournament_id', active.id),
+    sb.from('player_points').select('team_id,player,points').eq('tournament_id', tid),
   ])
   const playoffs = (po ?? []) as Match[]
   const champion = getChampion(playoffs)
@@ -47,7 +47,7 @@ export default async function Bracket({ params, searchParams }: { params: Promis
   const col = (rounds: string[]) => playoffs.filter((m) => rounds.includes(m.round))
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Summary', href: base }, { label: `Bracket ${bracket.name}` }]} />
+      <Breadcrumbs items={[{ label: org.name, href: `/${slug}` }, { label: 'Tournament', href: base }, { label: `Bracket ${bracket.name}` }]} />
       <h1 className="text-2xl font-bold md:text-3xl">Bracket</h1>
       {champion && <ChampionBanner c={champion} />}
       <BracketTabs base={`${base}/bracket`} brackets={brackets} current={bracket.name} />

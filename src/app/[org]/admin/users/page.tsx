@@ -19,7 +19,7 @@ export default async function Members({ params }: { params: Promise<{ org: strin
   const pill = (on: boolean) => `h-11 flex-1 rounded-lg text-sm font-semibold ${on ? 'bg-[#1F7A4D] text-white' : 'border border-[color:var(--line2)]'}`
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Summary', href: `/${slug}` }, { label: 'Admin', href: `/${slug}/admin` }, { label: 'Members' }]} />
+      <Breadcrumbs items={[{ label: 'Group', href: `/${slug}` }, { label: 'Admin', href: `/${slug}/admin` }, { label: 'Members' }]} />
       <h1 className="text-2xl font-bold md:text-3xl">Members and roles</h1>
       <p className={`text-sm ${muted}`}>Roles are per group. Admins manage everything, scorers score games, and everyone else can only watch. Admins can change anyone else’s role or remove them.</p>
       <div className="grid items-start gap-4 md:grid-cols-2">

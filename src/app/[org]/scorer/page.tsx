@@ -16,7 +16,7 @@ export default async function ScorerHome({ params, searchParams }: { params: Pro
   if (!bracket && !isP) return <p>No bracket yet.</p>
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Summary', href: `/${slug}` }, { label: 'Score' }]} />
+      <Breadcrumbs items={[{ label: 'Group', href: `/${slug}` }, { label: 'Score' }]} />
       <h1 className="text-2xl font-bold md:text-3xl">Pick a game to score</h1>
       <BracketTabs base={`/${slug}/scorer`} brackets={brackets} current={isP ? 'P' : bracket.name} playoffs />
       <div className="grid gap-2 md:grid-cols-2">
