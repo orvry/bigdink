@@ -1,4 +1,4 @@
-import { Doc, M, W, MUTED, GREEN } from './pdf'
+import { Doc, M, W, MUTED, ACCENT } from './pdf'
 import { money } from './format'
 import type { Expense } from './types'
 
@@ -68,7 +68,7 @@ export async function buildExpenseReport(r: ExpenseReportData): Promise<Uint8Arr
 
   // per player
   d.heading('Cost per player')
-  d.text(`${fmt(total)} divided equally among ${r.players.length} player${r.players.length === 1 ? '' : 's'} = ${fmt(perPlayer)} each.`, M, { bold: true, color: GREEN }); d.gap(18)
+  d.text(`${fmt(total)} divided equally among ${r.players.length} player${r.players.length === 1 ? '' : 's'} = ${fmt(perPlayer)} each.`, M, { bold: true, color: ACCENT }); d.gap(18)
   if (r.players.length) {
     const headP = () => {
       d.text('Player', M, { size: 8, bold: true, color: MUTED }); d.text('Team', M + 220, { size: 8, bold: true, color: MUTED })

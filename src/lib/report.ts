@@ -1,4 +1,4 @@
-import { Doc, M, INK, MUTED, GREEN } from './pdf'
+import { Doc, M, INK, MUTED, ACCENT } from './pdf'
 import type { Match, PlayerStat } from './types'
 import type { Row } from './standings'
 
@@ -94,7 +94,7 @@ export async function buildReport(r: ReportData): Promise<Uint8Array> {
       d.text(row.w, c.w); d.text(row.l, c.l); d.text(row.pf, c.pf); d.text(row.diff > 0 ? `+${row.diff}` : row.diff, c.df)
       d.gap(12)
       const note = [i < 2 ? 'Advances to semifinals' : '', row.via === 'h2h' ? 'won head-to-head' : row.via === 'points' ? 'tiebreak: total points' : ''].filter(Boolean).join(', ')
-      if (note) d.text(note, c.team, { size: 7.5, color: i < 2 ? GREEN : MUTED })
+      if (note) d.text(note, c.team, { size: 7.5, color: i < 2 ? ACCENT : MUTED })
       d.gap(note ? 12 : 6)
     })
     d.gap(4)

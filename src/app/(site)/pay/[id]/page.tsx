@@ -94,7 +94,7 @@ export default async function Pay({ params }: { params: Promise<{ id: string }> 
 
       {p.status === 'pending' && !manual && PAYMENTS_MODE === 'simulated' && (
         <div className="mt-3 flex flex-col gap-2">
-          <p role="note" className="rounded-xl bg-[#F5C84C] p-3 text-sm font-semibold text-[#10231A]">Simulated checkout. No real money moves.</p>
+          <p role="note" className="rounded-xl bg-[var(--gold)] p-3 text-sm font-semibold text-[#172033]">Simulated checkout. No real money moves.</p>
           <form action={simulatePayment.bind(null, id, 'success')}><SubmitButton pendingText="Processing…" className={`${btn} w-full`}>Simulate successful payment</SubmitButton></form>
           <form action={simulatePayment.bind(null, id, 'fail')}><SubmitButton pendingText="Processing…" className={`${btn2} w-full`}>Simulate failed payment</SubmitButton></form>
           <form action={simulatePayment.bind(null, id, 'cancel')}><SubmitButton pendingText="Cancelling…" className="h-12 w-full font-semibold text-[color:var(--muted)]">Cancel</SubmitButton></form>

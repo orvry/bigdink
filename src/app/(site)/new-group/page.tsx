@@ -24,7 +24,7 @@ export default async function NewGroup() {
         </ul>
       </section>
       {PAYMENTS_MODE === 'manual' && <p role="note" className="mb-3 rounded-xl bg-[var(--chip)] p-3 text-sm"><b>How you pay:</b> on the next screen you scan a GCash, Maya or bank QR code, pay the exact amount, and type the reference number from your receipt. An admin confirms it, and your group is created right after.</p>}
-      {PAYMENTS_MODE === 'simulated' && <p role="note" className="mb-3 rounded-xl bg-[#F5C84C] p-3 text-sm font-semibold text-[#10231A]">Test mode: payment is simulated and no money is charged.</p>}
+      {PAYMENTS_MODE === 'simulated' && <p role="note" className="mb-3 rounded-xl bg-[var(--gold)] p-3 text-sm font-semibold text-[#172033]">Test mode: payment is simulated and no money is charged.</p>}
       <ActionForm action={startGroupPayment} keepOnSuccess className="flex flex-col gap-3">
         <label className={label}>Group name<input name="name" required placeholder="Tokyo Pickleball Club" className={input} /></label>
         <label className={label}>Web address<input name="slug" required placeholder="tokyo-pickleball" pattern="[a-z0-9][a-z0-9\-]{1,38}" className={input} /></label>

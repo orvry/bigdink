@@ -9,7 +9,7 @@ export default function FeedCard({ t }: { t: FeedRow }) {
   return (
     <article className={`${card} flex flex-col gap-3`}>
       <header className="flex items-center gap-3">
-        <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1F7A4D] font-bold text-white">{t.org_name.slice(0, 1).toUpperCase()}</span>
+        <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--primary)] font-bold text-[color:var(--on-primary)]">{t.org_name.slice(0, 1).toUpperCase()}</span>
         <div className="flex-1">
           <Link href={`/${t.org_slug}`} className="font-semibold hover:underline">{t.org_name}</Link>
           <div className={`text-xs ${muted}`}>{t.date ?? 'Date to be announced'}</div>

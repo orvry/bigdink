@@ -1,15 +1,51 @@
+/* Rally Pop design system tokens. Brand colors: Rally Blue, Rally Coral, Court Teal, Pickle Gold.
+   Light is the default. Dark follows the device, or the choice made in the user menu (data-theme). */
 :root {
-  color-scheme: light dark;
-  --bg: #F3F6F1; --ink: #10231A; --card: #FFFFFF; --line: #D5DED7; --line2: #B8C6BD;
-  --muted: #4A5A50; --chip: #E3EAE5; --green: #1F7A4D; --link: #1F7A4D;
-  --solid: #10231A; --on-solid: #FFFFFF; --live: #10231A; --on-live: #D9F24A;
+  color-scheme: light;
+  --bg: #F7F8FC; --card: #FFFFFF; --elev: #FFFFFF; --ink: #172033; --muted: #5B6475;
+  --line: #DDE2EC; --line2: #8A94A8; --chip: #EEF1F8;
+  --primary: #2457E6; --on-primary: #FFFFFF; --coral: #FF704F; --teal: #00A99D; --gold: #FFD166;
+  --link: #2457E6; --green: #2457E6; --success-text: #00756B; --danger: #C62828; --warning: #8A5700;
+  --solid: #172033; --on-solid: #FFFFFF; --live: #00A99D; --on-live: #06231F;
+  --nav-active-bg: #E6EDFD; --nav-active-text: #2457E6;
+  --hero-from: #2457E6; --hero-to: #1A3FB5;
+  --tint-blue: #E6EDFD; --tint-blue-ink: #2457E6; --tint-teal: #DDF6F3; --tint-teal-ink: #00756B;
+  --tint-coral: #FFE8E2; --tint-coral-ink: #B93A1D; --tint-gold: #FFF3D1; --tint-gold-ink: #8A5700;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0E1A14; --ink: #E8F0EA; --card: #17261E; --line: #2A3C32; --line2: #44594D;
-    --muted: #A3B5AA; --chip: #223329; --green: #1F7A4D; --link: #5FD08F;
-    --solid: #E8F0EA; --on-solid: #10231A; --live: #D9F24A; --on-live: #10231A;
+  :root:not([data-theme="light"]) {
+  color-scheme: dark;
+  --bg: #101522; --card: #191F30; --elev: #222A3D; --ink: #F4F6FB; --muted: #B2BACC;
+  --line: #343D52; --line2: #6B7794; --chip: #222A3D;
+  --link: #8FB0FF; --green: #5E86FF; --success-text: #3DD6C9; --danger: #FF8A80; --warning: #FFD166;
+  --solid: #F4F6FB; --on-solid: #101522;
+  --nav-active-bg: #2457E6; --nav-active-text: #FFFFFF;
+  --hero-from: #2457E6; --hero-to: #142C7A;
+  --tint-blue: #1F2B4F; --tint-blue-ink: #8FB0FF; --tint-teal: #12363A; --tint-teal-ink: #3DD6C9;
+  --tint-coral: #3A2430; --tint-coral-ink: #FF9C85; --tint-gold: #3A3220; --tint-gold-ink: #FFD166;
   }
 }
-/* Loaded after globals.css so it wins over the create-next-app body colors */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #101522; --card: #191F30; --elev: #222A3D; --ink: #F4F6FB; --muted: #B2BACC;
+  --line: #343D52; --line2: #6B7794; --chip: #222A3D;
+  --link: #8FB0FF; --green: #5E86FF; --success-text: #3DD6C9; --danger: #FF8A80; --warning: #FFD166;
+  --solid: #F4F6FB; --on-solid: #101522;
+  --nav-active-bg: #2457E6; --nav-active-text: #FFFFFF;
+  --hero-from: #2457E6; --hero-to: #142C7A;
+  --tint-blue: #1F2B4F; --tint-blue-ink: #8FB0FF; --tint-teal: #12363A; --tint-teal-ink: #3DD6C9;
+  --tint-coral: #3A2430; --tint-coral-ink: #FF9C85; --tint-gold: #3A3220; --tint-gold-ink: #FFD166;
+}
+:root[data-theme="light"] { color-scheme: light; }
+
 body { background: var(--bg); color: var(--ink); }
+/* Visible keyboard focus everywhere */
+:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+/* Soft tinted tiles for icons and chips (always with an icon or text, never color alone) */
+.tint-blue { background: var(--tint-blue); color: var(--tint-blue-ink); }
+.tint-teal { background: var(--tint-teal); color: var(--tint-teal-ink); }
+.tint-coral { background: var(--tint-coral); color: var(--tint-coral-ink); }
+.tint-gold { background: var(--tint-gold); color: var(--tint-gold-ink); }
+.tabular { font-variant-numeric: tabular-nums; }

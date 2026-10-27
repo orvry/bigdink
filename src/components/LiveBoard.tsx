@@ -79,7 +79,7 @@ export default function LiveBoard({ initial, name1, name2, ptw, wb, players, ini
                   <td className="py-2 pr-2"><div className="font-semibold">{r.name}</div><div className={`text-xs ${muted}`}>{r.team}</div></td>
                   <td className="py-2 pr-2">
                     <div className="flex items-center gap-2"><span className="w-5 font-semibold">{r.game}</span>
-                      <div className="h-2 flex-1 rounded-full bg-[var(--chip)]"><div className="h-2 rounded-full bg-[#1F7A4D]" style={{ width: `${(r.game / maxGame) * 100}%` }} /></div></div>
+                      <div className="h-2 flex-1 rounded-full bg-[var(--chip)]"><div className="h-2 rounded-full bg-[var(--primary)]" style={{ width: `${(r.game / maxGame) * 100}%` }} /></div></div>
                   </td>
                   <td className="py-2 text-right font-semibold">{r.total} pts</td>
                 </tr>

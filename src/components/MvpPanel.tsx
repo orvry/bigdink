@@ -14,7 +14,7 @@ export default function MvpPanel({ title, stats, limit = 5 }: { title: string; s
             <li key={`${p.team}-${p.player}`} className="flex items-center gap-3 text-sm">
               <span className="w-5 font-bold">{i + 1}</span>
               <span className="flex-1"><span className="font-semibold">{p.player}</span> <span className={muted}>{p.team}</span></span>
-              {p.points === top && <span className="rounded-full bg-[#D9F24A] px-2 py-0.5 text-xs font-bold text-[#10231A]">MVP</span>}
+              {p.points === top && <span className="rounded-full bg-[var(--gold)] px-2 py-0.5 text-xs font-bold text-[#172033]">MVP</span>}
               <span className="w-16 text-right font-semibold">{p.points} pts</span>
             </li>
           ))}

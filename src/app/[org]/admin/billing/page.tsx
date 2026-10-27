@@ -31,7 +31,7 @@ export default async function Billing({ params, searchParams }: { params: Promis
         <div className="flex flex-col gap-3">
           <div className={`${card} flex flex-col gap-1`}>
             <div className="flex items-center justify-between"><b>{org.name}</b>
-              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${active ? 'bg-[var(--live)] text-[color:var(--on-live)]' : 'bg-[#F5C84C] text-[#10231A]'}`}>{active ? 'Active' : 'Ended'}</span></div>
+              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${active ? 'bg-[var(--live)] text-[color:var(--on-live)]' : 'bg-[var(--gold)] text-[#172033]'}`}>{active ? 'Active' : 'Ended'}</span></div>
             {org.rental_until && <div className="text-sm">{active ? `Active until ${fmtWhen(org.rental_until)} (${daysLeft} day${daysLeft === 1 ? '' : 's'} left)` : `Ended ${fmtWhen(org.rental_until)}`}</div>}
             <p className={`mt-1 text-xs ${muted}`}>{active ? 'All features are available.' : 'Only viewing the summary, standings and brackets, and downloading reports, work until you renew.'}</p>
           </div>
@@ -48,7 +48,7 @@ export default async function Billing({ params, searchParams }: { params: Promis
           <h2 className="font-bold">Add more days</h2>
           <input type="hidden" name="org_id" value={org.id} />
           {PAYMENTS_MODE === 'manual' && <p role="note" className="rounded-xl bg-[var(--chip)] p-3 text-sm">You pay by scanning a GCash, Maya or bank QR code and entering your reference number. An admin confirms it, and the days are added right after.</p>}
-          {PAYMENTS_MODE === 'simulated' && <p role="note" className="rounded-xl bg-[#F5C84C] p-3 text-sm font-semibold text-[#10231A]">Test mode: payment is simulated and no money is charged.</p>}
+          {PAYMENTS_MODE === 'simulated' && <p role="note" className="rounded-xl bg-[var(--gold)] p-3 text-sm font-semibold text-[#172033]">Test mode: payment is simulated and no money is charged.</p>}
           <RentalPicker pricePerDay={PRICE_PER_DAY} max={MAX_DAYS} />
           <SubmitButton pendingText="Continuing…" className={btn}>Continue to payment</SubmitButton>
           <p className={`text-xs ${muted}`}>New days are added after any time you have left.</p>

@@ -4,6 +4,7 @@ import { authenticate } from '@/app/actions'
 import ActionForm from '@/components/ActionForm'
 import SubmitButton from '@/components/SubmitButton'
 import Breadcrumbs from '@/components/Breadcrumbs'
+import { BRAND } from '@/lib/brand'
 import { btn, btn2, input, label, num, muted } from '@/lib/ui'
 
 export default function Login() {
@@ -11,7 +12,7 @@ export default function Login() {
     <div className="md:mx-auto md:w-full md:max-w-md">
       <Breadcrumbs items={[{ label: 'All groups', href: '/' }, { label: 'Sign in' }]} />
       <ActionForm action={authenticate} keepOnSuccess className="mt-6 flex flex-col gap-3">
-        <div className={`${num} text-[44px]`}>Pickleball Live</div>
+        <div className={`${num} text-4xl`}>{BRAND.name}</div>
         <p className={`mb-2 ${muted}`}>Sign in to score games or manage tournaments.</p>
         <label className={label}>Email<input name="email" type="email" autoComplete="email" required className={input} /></label>
         <label className={label}>Password<input name="password" type="password" autoComplete="current-password" minLength={6} required className={input} /></label>

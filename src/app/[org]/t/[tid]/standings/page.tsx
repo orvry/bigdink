@@ -37,7 +37,7 @@ export default async function Standings({ params, searchParams }: { params: Prom
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={r.team.id} className={`bg-[var(--card)] ${i < 2 ? 'border-l-4 border-l-[#1F7A4D]' : 'border-l-4 border-l-transparent'} ${i === 1 ? 'border-b-2 border-b-[color:var(--ink)]' : 'border-b border-b-[color:var(--line)]'}`}>
+              <tr key={r.team.id} className={`bg-[var(--card)] ${i < 2 ? 'border-l-4 border-l-[color:var(--primary)]' : 'border-l-4 border-l-transparent'} ${i === 1 ? 'border-b-2 border-b-[color:var(--ink)]' : 'border-b border-b-[color:var(--line)]'}`}>
                 <td className="px-3 py-3 font-bold">{i + 1}</td>
                 <td className="px-3"><div className="font-semibold">{r.team.name}</div>
                   <div className={`text-xs ${muted}`}>{i < 2 ? 'Advances to semifinals' : ''}{i < 2 && r.via ? ' · ' : ''}{r.via === 'h2h' ? 'Won head-to-head' : r.via === 'points' ? 'Tiebreak: total points' : ''}</div></td>

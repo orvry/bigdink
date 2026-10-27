@@ -1,7 +1,9 @@
 import { PDFDocument, StandardFonts, rgb, type Color, type PDFFont, type PDFPage } from 'pdf-lib'
+import { BRAND } from './brand'
 
 export const W = 595.28, H = 841.89, M = 48
-export const INK = rgb(0.063, 0.137, 0.102), MUTED = rgb(0.29, 0.353, 0.314), GREEN = rgb(0.122, 0.478, 0.302), LINE = rgb(0.835, 0.871, 0.843)
+// Rally Pop: ink #172033, muted #5B6475, Rally Blue #2457E6, border #DDE2EC
+export const INK = rgb(0.09, 0.125, 0.2), MUTED = rgb(0.357, 0.392, 0.459), ACCENT = rgb(0.141, 0.341, 0.902), LINE = rgb(0.867, 0.886, 0.925)
 
 // Standard PDF fonts only cover Latin-1, so swap anything else for a safe character.
 export const clean = (s: unknown) =>
@@ -39,11 +41,11 @@ export class Doc {
   }
   rule() { this.page.drawLine({ start: { x: M, y: this.y }, end: { x: W - M, y: this.y }, thickness: 0.5, color: LINE }) }
   gap(n: number) { this.y -= n }
-  heading(t: string) { this.ensure(40); this.gap(14); this.text(t, M, { size: 14, bold: true, color: GREEN }); this.gap(22) }
+  heading(t: string) { this.ensure(40); this.gap(14); this.text(t, M, { size: 14, bold: true, color: ACCENT }); this.gap(22) }
   footers() {
     const pages = this.pdf.getPages()
     pages.forEach((p, i) => {
-      p.drawText('Pickleball Live', { x: M, y: 28, size: 8, font: this.font, color: MUTED })
+      p.drawText(BRAND.name, { x: M, y: 28, size: 8, font: this.font, color: MUTED })
       const label = `Page ${i + 1} of ${pages.length}`
       p.drawText(label, { x: W - M - this.font.widthOfTextAtSize(label, 8), y: 28, size: 8, font: this.font, color: MUTED })
     })

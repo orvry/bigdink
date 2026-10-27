@@ -16,7 +16,7 @@ export default async function Members({ params }: { params: Promise<{ org: strin
   const sb = await createClient()
   const { data } = await sb.from('memberships').select('user_id,role,profiles(email)').eq('org_id', org.id)
   const members = ((data ?? []) as unknown as Member[]).sort((a, b) => (a.profiles?.email ?? '').localeCompare(b.profiles?.email ?? ''))
-  const pill = (on: boolean) => `h-11 flex-1 rounded-lg text-sm font-semibold ${on ? 'bg-[#1F7A4D] text-white' : 'border border-[color:var(--line2)]'}`
+  const pill = (on: boolean) => `h-11 flex-1 rounded-lg text-sm font-semibold ${on ? 'bg-[var(--primary)] text-[color:var(--on-primary)]' : 'border border-[color:var(--line2)]'}`
   return (
     <>
       <Breadcrumbs items={[{ label: 'Group', href: `/${slug}` }, { label: 'Admin', href: `/${slug}/admin` }, { label: 'Members' }]} />

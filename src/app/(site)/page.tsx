@@ -4,6 +4,7 @@ import { getUser } from '@/lib/auth'
 import { PRICE_PER_DAY } from '@/lib/billing'
 import { money } from '@/lib/format'
 import FeedCard from '@/components/FeedCard'
+import { BRAND } from '@/lib/brand'
 import { btn, card, input, muted } from '@/lib/ui'
 import type { FeedRow } from '@/lib/types'
 
@@ -38,7 +39,7 @@ export default async function Feed({ searchParams }: { searchParams: Promise<{ t
   return (
     <>
       <div>
-        <h1 className="text-2xl font-bold md:text-3xl">Pickleball Live</h1>
+        <h1 className="text-2xl font-bold md:text-3xl">{BRAND.name}</h1>
         <p className={`text-sm ${muted}`}>Browse public tournaments and groups. Watch live games, standings and brackets.</p>
       </div>
 
@@ -61,7 +62,7 @@ export default async function Feed({ searchParams }: { searchParams: Promise<{ t
             <div className="grid gap-3 sm:grid-cols-2">
               {groups.map((g) => (
                 <Link key={g.id} href={`/${g.slug}`} className={`${card} flex items-center gap-3 transition-colors hover:border-[color:var(--green)]`}>
-                  <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1F7A4D] font-bold text-white">{g.name.slice(0, 1).toUpperCase()}</span>
+                  <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] font-bold text-[color:var(--on-primary)]">{g.name.slice(0, 1).toUpperCase()}</span>
                   <span className="min-w-0 flex-1 truncate font-semibold">{g.name}</span>
                   <span className={`shrink-0 text-xs ${muted}`}>{g.tournaments?.[0]?.count ?? 0} tournaments</span>
                 </Link>

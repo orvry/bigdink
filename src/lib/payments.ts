@@ -57,7 +57,6 @@ export async function createPaymentRow(
 
   for (let attempt = 0; attempt < 5; attempt++) {
     //const { data: used } = await admin.from('payments').select('amount').eq('provider', 'manual').in('status', ['pending', 'submitted']).gt('amount', base).lte('amount', base + 99)
-    //const free = freeAmounts(base, new Set((used ?? []).map((r) => r.amount as number)))
     const free = [base];
     if (free.length === 0)
       return {

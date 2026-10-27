@@ -68,13 +68,13 @@ export default async function ScoreGame({ params }: { params: Promise<{ org: str
           <p className="text-sm">The game ended automatically at the win score.</p>
         </div>
       )}
-      {paused && <p role="status" className="rounded-xl bg-[#F5C84C] p-3 text-center text-sm font-semibold text-[#10231A]">Game paused. Resume to keep scoring.</p>}
+      {paused && <p role="status" className="rounded-xl bg-[var(--gold)] p-3 text-center text-sm font-semibold text-[#172033]">Game paused. Resume to keep scoring.</p>}
       {m.status === 'live' && gamePoint(m.score1, m.score2, ptw, wb) && <p role="status" className="text-center text-sm font-bold">Game point. The next point can end the game.</p>}
 
       {!final && <p className={`text-xs font-bold ${muted}`}>WHO WON THE POINT?</p>}
       <div className="grid gap-4 md:grid-cols-2">
-        {side(team1, 'bg-[#1F7A4D] text-white')}
-        {side(team2, 'bg-[#D9F24A] text-[#10231A]')}
+        {side(team1, 'bg-[var(--primary)] text-[color:var(--on-primary)]')}
+        {side(team2, 'bg-[var(--gold)] text-[#172033]')}
       </div>
 
       <div className="mt-2 grid gap-2.5 md:grid-cols-3">

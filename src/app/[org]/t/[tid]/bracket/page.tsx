@@ -19,7 +19,7 @@ function Game({ m, base }: { m: Match; base: string }) {
       </div>
     )
   }
-  const border = m.status === 'live' ? 'border-[color:var(--green)]' : m.status === 'paused' ? 'border-[#F5C84C]' : 'border-[color:var(--line)]'
+  const border = m.status === 'live' ? 'border-[color:var(--green)]' : m.status === 'paused' ? 'border-[color:var(--gold)]' : 'border-[color:var(--line)]'
   return (
     <Link href={`${base}/live/${m.id}`} className={`block w-full rounded-xl border-[1.5px] bg-[var(--card)] text-[13px] ${border}`}>
       <div className={`px-2.5 pt-1 text-[11px] ${muted}`}>Game {m.game_no}{m.status === 'paused' ? ' · paused' : ''}</div>
