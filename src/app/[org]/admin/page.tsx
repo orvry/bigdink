@@ -34,7 +34,8 @@ export default async function Admin({ params }: { params: Promise<{ org: string 
     <>
       <Breadcrumbs items={[{ label: 'Group', href: base }, { label: 'Admin' }]} />
       <h1 className="text-2xl font-bold md:text-3xl">{org.name}: admin</h1>
-      <div className="grid grid-cols-2 gap-2 text-center text-sm font-semibold md:max-w-2xl md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 text-center text-sm font-semibold md:max-w-3xl md:grid-cols-3 lg:grid-cols-6">
+        <Link href={`${base}/admin/registrations`} className={btn}>Registrations</Link>
         <Link href={`${base}/admin/teams`} className={btn}>Teams</Link>
         <Link href={`${base}/admin/matches`} className={btn}>Matches</Link>
         <Link href={`${base}/admin/expenses`} className={btn}>Expenses</Link>
@@ -56,6 +57,7 @@ export default async function Admin({ params }: { params: Promise<{ org: string 
                 <div><div className="font-semibold">{t.name}</div><div className={`text-xs ${muted}`}>{active?.id === t.id ? 'Active' : 'Draft'} · {t.courts} courts · to {t.points_to_win}, win by {t.win_by} · {t.currency}</div></div>
                 {active?.id !== t.id && <form action={setActiveTournament.bind(null, t.id)}><SubmitButton pendingText="Switching…" className={`${btn2} h-11`}>Make active</SubmitButton></form>}
               </div>
+              <Link href={`${base}/admin/tournaments/${t.id}`} className="text-sm font-semibold text-[color:var(--link)] underline">Edit details, description and banner</Link>
               <VisibilityForm kind="tournament" id={t.id} value={t.visibility} />
               {active?.id === t.id && (
                 <ActionForm action={addBracket} className="flex flex-col gap-1">

@@ -1,10 +1,10 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, CreditCard, Layers, LayoutDashboard, Monitor, Network, Settings, Swords, Trophy, UserCog, Users, Wallet } from 'lucide-react'
+import { CalendarDays, ClipboardList, CreditCard, Layers, LayoutDashboard, Monitor, Network, Settings, Swords, Trophy, UserCog, Users, Wallet } from 'lucide-react'
 import type { Role } from '@/lib/types'
 
-const ICONS = { dashboard: LayoutDashboard, standings: Trophy, brackets: Network, screen: Monitor, tournaments: Layers, matches: Swords, teams: Users, schedule: CalendarDays, expenses: Wallet, members: UserCog, billing: CreditCard, settings: Settings }
+const ICONS = { dashboard: LayoutDashboard, standings: Trophy, brackets: Network, screen: Monitor, tournaments: Layers, matches: Swords, teams: Users, schedule: CalendarDays, expenses: Wallet, registrations: ClipboardList, members: UserCog, billing: CreditCard, settings: Settings }
 
 type Item = { label: string; icon: keyof typeof ICONS; scope: 't' | 'org'; path: string; exact?: boolean; show: boolean }
 
@@ -12,7 +12,7 @@ type Item = { label: string; icon: keyof typeof ICONS; scope: 't' | 'org'; path:
 export default function SidebarNav({ slug, defaultTid, role, rentalActive }: { slug: string; defaultTid: string | null; role: Role; rentalActive: boolean }) {
   const pathname = usePathname()
   const tid = pathname.match(/^\/[^/]+\/t\/([^/]+)/)?.[1] ?? defaultTid
-  const score = rentalActive && role !== 'viewer'
+  const score = rentalActive && (role === 'admin' || role === 'scorer')
   const manage = rentalActive && role === 'admin'
   const hasT = Boolean(tid)
 
@@ -26,6 +26,7 @@ export default function SidebarNav({ slug, defaultTid, role, rentalActive }: { s
     ] },
     { title: 'Manage', items: [
       { label: 'Matches', icon: 'matches', scope: 'org', path: '/scorer', show: score },
+      { label: 'Registrations', icon: 'registrations', scope: 'org', path: '/admin/registrations', show: manage },
       { label: 'Players & Teams', icon: 'teams', scope: 'org', path: '/admin/teams', show: manage },
       { label: 'Schedule', icon: 'schedule', scope: 'org', path: '/admin/matches', show: manage },
       { label: 'Expenses', icon: 'expenses', scope: 'org', path: '/admin/expenses', show: manage },

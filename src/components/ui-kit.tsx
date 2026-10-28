@@ -79,10 +79,10 @@ export function Donut({ segments, centerTop, centerBottom }: { segments: { label
 }
 
 /** Blue banner with a paddle, ball and coral and teal shapes. Decorative. */
-export function HeroBanner({ eyebrow, title, meta, status }: { eyebrow: string; title: string; meta: string; status: ReactNode }) {
+export function HeroBanner({ eyebrow, title, meta, status, description, bannerUrl }: { eyebrow: string; title: string; meta: string; status: ReactNode; description?: string | null; bannerUrl?: string | null }) {
   return (
-    <section className="relative isolate overflow-hidden rounded-3xl p-6 text-white md:p-8" style={{ background: 'linear-gradient(110deg, var(--hero-from), var(--hero-to))' }}>
-      <svg aria-hidden="true" viewBox="0 0 400 200" preserveAspectRatio="xMaxYMid slice" className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden h-full w-3/5 sm:block">
+    <section className="relative isolate overflow-hidden rounded-3xl p-6 text-white md:p-8" style={{ background: bannerUrl ? `linear-gradient(rgba(16,21,34,.62), rgba(16,21,34,.62)), url(${bannerUrl}) center / cover` : 'linear-gradient(110deg, var(--hero-from), var(--hero-to))' }}>
+      <svg aria-hidden="true" viewBox="0 0 400 200" preserveAspectRatio="xMaxYMid slice" className={`pointer-events-none absolute inset-y-0 right-0 -z-10 h-full w-3/5 ${bannerUrl ? 'hidden' : 'hidden sm:block'}`}>
         <path d="M400 0H290Q330 55 400 72Z" fill="var(--coral)" />
         <path d="M400 200H270Q330 148 400 138Z" fill="var(--teal)" />
         <g transform="rotate(-32 270 100)">
@@ -95,6 +95,7 @@ export function HeroBanner({ eyebrow, title, meta, status }: { eyebrow: string; 
       <p className="text-xs font-semibold uppercase tracking-widest opacity-90">{eyebrow}</p>
       <h1 className="mt-1 text-3xl font-bold md:text-4xl">{title}</h1>
       <p className="mt-2 text-sm md:text-base">{meta}</p>
+      {description && <p className="mt-2 max-w-2xl text-sm opacity-95 md:text-base">{description}</p>}
       <div className="mt-4">{status}</div>
     </section>
   )

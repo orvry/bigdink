@@ -1,12 +1,18 @@
 'use server'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireUser, roleIn } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { PAYMENTS_MODE, MAX_DAYS } from '@/lib/billing'
 import { createPaymentRow } from '@/lib/payments'
-import { normalizeRef } from '@/lib/payref'
+import { safeNext } from '@/lib/nav'
+import { normalizeRef, parseWhen } from '@/lib/payref'
+import { confirmPayment, rejectPayment } from '@/lib/system/payments'
+import { newPayCode } from '@/lib/payments'
+import { isUpload, uploadImage } from '@/lib/upload'
+import { isSystemAdmin } from '@/lib/system'
 import { winReached } from '@/lib/rules'
 import { seedPlayoffs } from '@/lib/playoffs'
 import type { FormState } from '@/lib/types'
@@ -41,7 +47,20 @@ export async function authenticate(_p: FormState, fd: FormData): Promise<FormSta
     const { error } = await sb.auth.signInWithPassword({ email, password })
     if (error) return { error: error.message }
   }
-  redirect('/')
+  redirect(safeNext(s(fd, 'next')))
+}
+
+/** Sends the visitor to Facebook to sign in. Facebook returns them to /auth/callback, which saves their name and photo. */
+export async function signInWithFacebook(fd: FormData) {
+  const sb = await createClient()
+  const h = await headers()
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('x-forwarded-host') ?? h.get('host')}`
+  const { data, error } = await sb.auth.signInWithOAuth({
+    provider: 'facebook',
+    options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext(s(fd, 'next')))}`, scopes: 'email public_profile' },
+  })
+  if (error || !data.url) redirect('/login?error=facebook')
+  redirect(data.url)
 }
 
 export async function signOut() {
@@ -287,4 +306,168 @@ export async function deleteExpense(id: string) {
   const sb = await createClient()
   await sb.from('expenses').delete().eq('id', id)
   refresh()
+}
+
+/* ---- tournament details, registration, invites, payment accounts ---- */
+export async function updateTournament(_p: FormState, fd: FormData): Promise<FormState> {
+  await requireUser()
+  const sb = await createClient()
+  const id = s(fd, 'id')
+  const currency = (s(fd, 'currency') || 'JPY').toUpperCase()
+  if (!s(fd, 'name')) return { error: 'Enter a tournament name.' }
+  if (!/^[A-Z]{3}$/.test(currency)) return { error: 'Currency must be a 3-letter code such as JPY, PHP or USD.' }
+  const patch: Record<string, unknown> = {
+    name: s(fd, 'name'), description: s(fd, 'description').slice(0, 500) || null, date: s(fd, 'date') || null, courts: n(fd, 'courts') ?? 4,
+    points_to_win: n(fd, 'points_to_win') ?? 11, win_by: n(fd, 'win_by') ?? 2, currency,
+    visibility: s(fd, 'visibility') === 'private' ? 'private' : 'public', registration_open: fd.get('registration_open') === 'on',
+  }
+  if (fd.get('remove_banner') === 'on') patch.banner_url = null
+  const { data, error } = await sb.from('tournaments').update(patch).eq('id', id).select('id')
+  if (error) return { error: friendly(error.message) }
+  if (!data?.length) return { error: "You don't have permission to do that, or this group's rental has ended." }
+  const file = fd.get('banner')
+  if (isUpload(file)) {
+    const up = await uploadImage(file, 'banners')
+    if ('error' in up) return { error: `The details were saved, but the banner was not: ${up.error}` }
+    const r = await sb.from('tournaments').update({ banner_url: up.url }).eq('id', id)
+    if (r.error) return { error: friendly(r.error.message) }
+  }
+  refresh()
+  return { ok: 'Tournament updated.' }
+}
+
+export async function joinGroup(_p: FormState, fd: FormData): Promise<FormState> {
+  await requireUser()
+  const sb = await createClient()
+  const { error } = await sb.rpc('join_group', { p_org: s(fd, 'org_id'), p_code: s(fd, 'code') || null })
+  if (error) return { error: friendly(error.message) }
+  refresh()
+  redirect(safeNext(s(fd, 'next')))
+}
+
+export async function registerForTournament(_p: FormState, fd: FormData): Promise<FormState> {
+  await requireUser()
+  const sb = await createClient()
+  return run('You are registered. An admin will confirm your spot and place you on a team.', () =>
+    sb.rpc('register_for_tournament', { p_tournament: s(fd, 'tournament_id'), p_as_guest: s(fd, 'as_guest') === '1', p_partner: s(fd, 'partner'), p_note: s(fd, 'note') }))
+}
+
+export async function withdrawRegistration(tournamentId: string) {
+  await requireUser()
+  const sb = await createClient()
+  await sb.rpc('withdraw_registration', { p_tournament: tournamentId })
+  refresh()
+}
+
+export async function rotateInvite(orgId: string) {
+  await requireUser()
+  const sb = await createClient()
+  await sb.rpc('rotate_invite', { p_org: orgId })
+  refresh()
+}
+
+export async function setRegistrationStatus(_p: FormState, fd: FormData): Promise<FormState> {
+  await requireUser()
+  const sb = await createClient()
+  const status = s(fd, 'status')
+  if (!['approved', 'declined', 'pending'].includes(status)) return { error: 'Unknown status.' }
+  return run(`Marked ${status}.`, () => sb.from('tournament_registrations').update({ status }).eq('id', s(fd, 'id')))
+}
+
+/** Puts a registered person on a team seat. Their account is linked to the seat, so their games and points count toward their personal stats. */
+export async function assignRegistration(_p: FormState, fd: FormData): Promise<FormState> {
+  await requireUser()
+  const sb = await createClient()
+  const [teamId, seatText] = s(fd, 'slot').split(':')
+  const seat = Number(seatText)
+  if (!teamId || (seat !== 1 && seat !== 2)) return { error: 'Choose a team seat.' }
+  const { data: reg } = await sb.from('tournament_registrations').select('id,user_id,tournament_id,profiles(display_name,email)').eq('id', s(fd, 'reg_id')).maybeSingle()
+  const { data: team } = await sb.from('teams').select('*').eq('id', teamId).maybeSingle()
+  if (!reg || !team) return { error: 'Registration or team not found.' }
+  if (team.tournament_id !== reg.tournament_id) return { error: 'That team is in a different tournament.' }
+  const nameCol = `player${seat}`, userCol = `player${seat}_user`
+  if (team[userCol]) return { error: 'That seat already has a registered user.' }
+  const prof = reg.profiles as unknown as { display_name: string | null; email: string } | null
+  const name = team[nameCol] || prof?.display_name || prof?.email.split('@')[0] || 'Player'
+  const t = await sb.from('teams').update({ [userCol]: reg.user_id, [nameCol]: name }).eq('id', teamId).select('id')
+  if (t.error) return { error: friendly(t.error.message) }
+  if (!t.data?.length) return { error: "You don't have permission to do that, or this group's rental has ended." }
+  return run(`${name} is on the team.`, () => sb.from('tournament_registrations').update({ status: 'approved', team_id: teamId }).eq('id', reg.id))
+}
+
+export async function savePaymentAccount(_p: FormState, fd: FormData): Promise<FormState> {
+  await requireUser()
+  if (!(await isSystemAdmin())) return { error: 'Only system admins can change payment accounts.' }
+  const method = s(fd, 'method')
+  if (!['gcash', 'maya', 'bank'].includes(method)) return { error: 'Choose GCash, Maya or bank.' }
+  if (!s(fd, 'account_name') || !s(fd, 'account_number')) return { error: 'Enter the account name and the account number.' }
+  const row: Record<string, unknown> = {
+    method, label: s(fd, 'label') || method, account_name: s(fd, 'account_name'), account_number: s(fd, 'account_number'),
+    bank_name: s(fd, 'bank_name') || null, sort: n(fd, 'sort') ?? 0, active: fd.get('active') === 'on',
+  }
+  const file = fd.get('qr')
+  if (isUpload(file)) {
+    const up = await uploadImage(file, 'payment-qr')
+    if ('error' in up) return { error: up.error }
+    row.qr_url = up.url
+  }
+  const admin = adminClient()
+  const id = s(fd, 'id')
+  const { error } = id ? await admin.from('payment_accounts').update(row).eq('id', id) : await admin.from('payment_accounts').insert(row)
+  if (error) return { error: error.message }
+  revalidatePath('/system/payment-accounts')
+  return { ok: 'Payment account saved.' }
+}
+
+export async function deletePaymentAccount(id: string) {
+  await requireUser()
+  if (!(await isSystemAdmin())) return
+  await adminClient().from('payment_accounts').delete().eq('id', id)
+  revalidatePath('/system/payment-accounts')
+}
+
+/* ---- system admin: payments queue and groups (the same rules the /api/admin endpoints use) ---- */
+async function systemOnly() {
+  await requireUser()
+  return isSystemAdmin()
+}
+
+export async function confirmPaymentAction(_p: FormState, fd: FormData): Promise<FormState> {
+  if (!(await systemOnly())) return { error: 'Only system admins can confirm payments.' }
+  const amount = Math.round(Number(s(fd, 'amount')) * 100)
+  const reference = normalizeRef(s(fd, 'reference'))
+  const paidAt = parseWhen(s(fd, 'datetime'))
+  if (!Number.isFinite(amount) || amount <= 0) return { error: 'Enter the amount received, in pesos.' }
+  if (reference.length < 6) return { error: 'Enter the reference number shown in the payment app.' }
+  if (!paidAt) return { error: 'Enter the date and time shown in the payment app.' }
+  const r = await confirmPayment({ payCode: s(fd, 'pay_code'), amount, reference, paidAt, channel: s(fd, 'channel') || null })
+  if (!r.ok) return { error: r.error }
+  revalidatePath('/', 'layout')
+  return { ok: r.status === 'matched' ? 'Confirmed. The group or days were applied.' : 'Already confirmed.' }
+}
+
+export async function rejectPaymentAction(_p: FormState, fd: FormData): Promise<FormState> {
+  if (!(await systemOnly())) return { error: 'Only system admins can reject payments.' }
+  if (!s(fd, 'reason')) return { error: 'Write a reason. The payer will see it.' }
+  const r = await rejectPayment(s(fd, 'pay_code'), s(fd, 'reason'))
+  if (!r.ok) return { error: r.error ?? 'Could not reject the payment.' }
+  revalidatePath('/system', 'layout')
+  return { ok: 'Rejected. The payer can see the reason.' }
+}
+
+/** Adds free days to a group (for example to make up for a problem). It is recorded as a payment of zero. */
+export async function grantRentalDays(_p: FormState, fd: FormData): Promise<FormState> {
+  if (!(await systemOnly())) return { error: 'Only system admins can add days.' }
+  const user = await requireUser()
+  const days = Math.round(Number(s(fd, 'days')))
+  if (!Number.isInteger(days) || days < 1 || days > 90) return { error: 'Enter between 1 and 90 days.' }
+  const admin = adminClient()
+  const { data, error } = await admin.from('payments').insert({
+    user_id: user.id, org_id: s(fd, 'org_id'), purpose: 'extend', days, amount: 0, currency: 'PHP', provider: 'manual', pay_code: newPayCode(),
+  }).select('id').single()
+  if (error) return { error: error.message }
+  const done = await admin.rpc('fulfill_payment', { p_payment: data.id })
+  if (done.error) return { error: done.error.message }
+  revalidatePath('/', 'layout')
+  return { ok: `${days} day${days === 1 ? '' : 's'} added.` }
 }

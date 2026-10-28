@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Trophy } from 'lucide-react'
 import { getContext } from '@/lib/data'
 import { roleIn } from '@/lib/auth'
 import { isRentalActive, hoursLeft, fmtWhen } from '@/lib/billing'
@@ -7,12 +6,12 @@ import Logo from '@/components/Logo'
 import MobileMenu from '@/components/MobileMenu'
 import SidebarNav from '@/components/SidebarNav'
 import UserMenu from '@/components/UserMenu'
-import { IconTile } from '@/components/ui-kit'
+import TournamentSwitcher from '@/components/TournamentSwitcher'
 
 /** The group shell: sidebar with icons on the left, top bar with the user menu, then the page. */
 export default async function OrgLayout({ children, params }: { children: React.ReactNode; params: Promise<{ org: string }> }) {
   const { org: slug } = await params
-  const { org, active } = await getContext(slug)
+  const { org, active, tournaments } = await getContext(slug)
   const role = await roleIn(org.id)
   const rentalActive = isRentalActive(org)
   const base = `/${slug}`
@@ -21,16 +20,7 @@ export default async function OrgLayout({ children, params }: { children: React.
     <>
       <Logo />
       <SidebarNav slug={slug} defaultTid={active?.id ?? null} role={role} rentalActive={rentalActive} />
-      {active && (
-        <Link href={`${base}/t/${active.id}`} className="mt-auto flex items-center gap-3 rounded-2xl border border-[color:var(--line)] bg-[var(--elev)] p-3">
-          <IconTile tint="gold" size={40}><Trophy size={20} /></IconTile>
-          <span className="min-w-0 text-xs leading-snug">
-            <span className="block truncate text-sm font-semibold">{active.name}</span>
-            <span className="block text-[color:var(--muted)]">{active.date ?? 'Date to be announced'}</span>
-            <span className="block truncate text-[color:var(--muted)]">{org.name}</span>
-          </span>
-        </Link>
-      )}
+      <TournamentSwitcher slug={slug} tournaments={tournaments.map((t) => ({ id: t.id, name: t.name, date: t.date }))} defaultTid={active?.id ?? null} orgName={org.name} />
     </>
   )
 

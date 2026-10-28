@@ -18,14 +18,17 @@ export default async function Standings({ params, searchParams }: { params: Prom
     sb.from('matches').select('*').eq('bracket_id', bracket.id).eq('round', 'Round robin'),
   ])
   const rows = computeStandings((teams ?? []) as Team[], (matches ?? []) as Match[])
-  const th = 'px-3 py-2 font-semibold'
+  const th = 'px-3 py-1 font-semibold'
+  // Rounded rows. Teams that advance get a soft blue tint and a blue bar on the left. No divider line.
+  const rowCells = '[&>td]:border-y [&>td]:border-[color:var(--line)] [&>td:first-child]:rounded-l-2xl [&>td:first-child]:border-l [&>td:last-child]:rounded-r-2xl [&>td:last-child]:border-r'
+  const advancing = '[&>td]:bg-[var(--tint-blue)] [&>td:first-child]:shadow-[inset_4px_0_0_var(--primary)]'
   return (
     <>
       <Breadcrumbs items={[{ label: org.name, href: `/${slug}` }, { label: 'Tournament', href: `/${slug}/t/${tid}` }, { label: 'Standings' }]} />
       <h1 className="text-2xl font-bold md:text-3xl">Standings</h1>
       <BracketTabs base={`/${slug}/t/${tid}/standings`} brackets={brackets} current={bracket.name} />
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[22rem] text-left text-[15px]">
+        <table className="w-full min-w-[22rem] border-separate border-spacing-y-2 text-left text-[15px]">
           <thead className={`text-xs ${muted}`}>
             <tr>
               <th className={th}>#</th><th className={th}>Team</th>
@@ -37,11 +40,11 @@ export default async function Standings({ params, searchParams }: { params: Prom
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={r.team.id} className={`bg-[var(--card)] ${i < 2 ? 'border-l-4 border-l-[color:var(--primary)]' : 'border-l-4 border-l-transparent'} ${i === 1 ? 'border-b-2 border-b-[color:var(--ink)]' : 'border-b border-b-[color:var(--line)]'}`}>
+              <tr key={r.team.id} className={`${rowCells} ${i < 2 ? advancing : '[&>td]:bg-[var(--card)]'}`}>
                 <td className="px-3 py-3 font-bold">{i + 1}</td>
                 <td className="px-3"><div className="font-semibold">{r.team.name}</div>
                   <div className={`text-xs ${muted}`}>{i < 2 ? 'Advances to semifinals' : ''}{i < 2 && r.via ? ' · ' : ''}{r.via === 'h2h' ? 'Won head-to-head' : r.via === 'points' ? 'Tiebreak: total points' : ''}</div></td>
-                <td className="px-3">{r.w}</td><td className="px-3">{r.l}</td><td className="px-3">{r.pf}</td><td className="px-3">{r.diff > 0 ? `+${r.diff}` : r.diff}</td>
+                <td className="px-3 tabular">{r.w}</td><td className="px-3 tabular">{r.l}</td><td className="px-3 tabular">{r.pf}</td><td className="px-3 tabular">{r.diff > 0 ? `+${r.diff}` : r.diff}</td>
               </tr>
             ))}
           </tbody>

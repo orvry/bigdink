@@ -12,7 +12,3 @@ export function parseWhen(input: string): Date | null {
   const d = new Date(withZone)
   return Number.isNaN(d.getTime()) ? null : d
 }
-
-/** Amounts (in centavos) from base+1 to base+99 that no open payment is using. The cents make each payment's amount unique. */
-export const freeAmounts = (base: number, taken: Set<number>) =>
-  Array.from({ length: 99 }, (_, i) => base + i + 1).filter((a) => !taken.has(a))

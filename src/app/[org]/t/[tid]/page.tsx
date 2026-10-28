@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { ArrowRight, CalendarClock, ChevronRight, ClipboardCheck, FileDown, Monitor, Network, Plus, Trophy, UserRound, Users, Wallet, Check } from 'lucide-react'
 import { getTournamentContext, MATCH_SELECT, slotLabel } from '@/lib/data'
-import { roleIn } from '@/lib/auth'
+import { getUser, roleIn } from '@/lib/auth'
+import { canScoreRole, isMemberRole } from '@/lib/roles'
 import { isRentalActive } from '@/lib/billing'
 import { computeStandings } from '@/lib/standings'
 import { computeMvps, getChampion } from '@/lib/stats'
 import ChampionBanner from '@/components/ChampionBanner'
+import JoinActions from '@/components/JoinActions'
 import MvpPanel from '@/components/MvpPanel'
 import StatusChip from '@/components/StatusChip'
 import { CardHeader, Donut, HeroBanner, IconTile, StatCard, TeamDot } from '@/components/ui-kit'
@@ -20,14 +22,17 @@ export default async function Dashboard({ params }: { params: Promise<{ org: str
   const base = `/${slug}/t/${tid}`
   const role = await roleIn(org.id)
   const rentalActive = isRentalActive(org)
-  const canScore = rentalActive && role !== 'viewer'
+  const user = await getUser()
+  const canScore = rentalActive && canScoreRole(role)
   const canManage = rentalActive && role === 'admin'
 
-  const [{ data }, { data: tm }, { data: pts }] = await Promise.all([
+  const [{ data }, { data: tm }, { data: pts }, { data: myReg }] = await Promise.all([
     sb.from('matches').select(MATCH_SELECT).eq('tournament_id', tid).order('game_no'),
     sb.from('teams').select('*').eq('tournament_id', tid),
     sb.from('player_points').select('team_id,player,points').eq('tournament_id', tid),
+    user ? sb.from('tournament_registrations').select('status').eq('tournament_id', tid).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
   ])
+  const registered = myReg?.status === 'pending' || myReg?.status === 'approved'
   const matches = (data ?? []) as Match[]
   const teams = (tm ?? []) as Team[]
   const champion = getChampion(matches.filter((m) => m.bracket_id === null))
@@ -68,11 +73,18 @@ export default async function Dashboard({ params }: { params: Promise<{ org: str
   return (
     <>
       <HeroBanner
-        eyebrow="Tournament overview" title={tournament.name}
+        eyebrow="Tournament overview" title={tournament.name} description={tournament.description} bannerUrl={tournament.banner_url}
         meta={`${teams.length} teams · ${brackets.length} bracket${brackets.length === 1 ? '' : 's'} · ${tournament.date ?? 'Date to be announced'}`}
         status={<span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--teal)] px-3 py-1.5 text-xs font-bold text-[#06231F]"><Check size={14} aria-hidden="true" />{status}</span>}
       />
       {champion && <ChampionBanner c={champion} />}
+      {!champion && (
+        <section aria-label="Take part" className={`${card} flex flex-wrap items-center gap-3`}>
+          <div className="min-w-48 flex-1"><h2 className="font-bold">{registered ? 'You are registered' : 'Want to play?'}</h2>
+            <p className={`text-sm ${muted}`}>{registered ? 'The organizer will place you on a team.' : isMemberRole(role) ? 'Register to take part in this tournament.' : 'Join as a guest, or join the group to take part.'}</p></div>
+          <div className="flex flex-wrap items-center gap-2"><JoinActions slug={slug} tid={tid} member={isMemberRole(role)} registered={registered} open={tournament.registration_open && rentalActive} /></div>
+        </section>
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <StatCard tint="blue" icon={<Users size={22} />} label="Registered teams" value={teams.length} sub={`in ${brackets.length} bracket${brackets.length === 1 ? '' : 's'}`} />

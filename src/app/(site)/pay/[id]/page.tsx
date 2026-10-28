@@ -1,20 +1,16 @@
 import Link from 'next/link'
-import Image from 'next/image'
-import { existsSync } from 'node:fs'
-import path from 'node:path'
 import { notFound } from 'next/navigation'
 import { requireUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { simulatePayment, submitReference } from '@/app/actions'
 import { PAYMENTS_MODE, fmtWhen } from '@/lib/billing'
-import { PAY_METHODS } from '@/lib/payment-methods'
 import { money } from '@/lib/format'
 import ActionForm from '@/components/ActionForm'
 import PollRefresh from '@/components/PollRefresh'
 import SubmitButton from '@/components/SubmitButton'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import { card, btn, btn2, input, label, muted } from '@/lib/ui'
-import type { Payment } from '@/lib/types'
+import type { Payment, PaymentAccount } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +25,9 @@ export default async function Pay({ params }: { params: Promise<{ id: string }> 
   const manual = p.provider === 'manual'
   const expired = manual && p.status === 'pending' && !!p.expires_at && new Date(p.expires_at) < new Date()
   const open = (p.status === 'pending' || p.status === 'submitted') && !expired
+
+  const { data: acc } = await sb.from('payment_accounts').select('*').eq('active', true).order('sort').order('created_at')
+  const accounts = (acc ?? []) as PaymentAccount[]
 
   let dest = '/'
   if (p.status === 'paid') {
@@ -46,32 +45,36 @@ export default async function Pay({ params }: { params: Promise<{ id: string }> 
         <div className={`text-sm ${muted}`}>{p.days} day{p.days === 1 ? '' : 's'}</div>
         <div className="text-sm">Amount to pay</div>
         <div className="text-4xl font-bold">{money(p.amount / 100, p.currency)}</div>
-        {manual && open && <p className="text-sm font-semibold">Pay exactly this amount, including the cents. The cents identify your payment.</p>}
-        {manual && p.pay_code && <div className="text-sm">Payment code: <b className="rounded bg-[var(--chip)] px-2 py-0.5">{p.pay_code}</b> <span className={muted}>Put it in the payment message if the app has one. Quote it if you contact support.</span></div>}
+        {manual && p.pay_code && (
+          <div className="mt-1 rounded-xl bg-[var(--chip)] p-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-[color:var(--muted)]">Your payment code</div>
+            <div className="text-2xl font-bold tracking-wider tabular">{p.pay_code}</div>
+            {open && <p className="mt-1 text-sm">Write this code in the payment message or note. It tells us the payment is yours.</p>}
+          </div>
+        )}
         <div className="text-sm">Status: <b>{expired ? 'Expired' : p.status === 'submitted' ? 'Waiting for confirmation' : p.status.charAt(0).toUpperCase() + p.status.slice(1)}</b></div>
       </div>
 
       {manual && open && (
         <>
           <h2 className="mt-4 font-bold">Step 1. Scan and pay</h2>
-          <p className={`text-sm ${muted}`}>Open GCash, Maya or your banking app, scan one of these codes and pay {money(p.amount / 100, p.currency)}.</p>
+          <p className={`text-sm ${muted}`}>Open GCash, Maya or your banking app, scan one of these codes and pay {money(p.amount / 100, p.currency)}. Put {p.pay_code} in the message.</p>
+          {accounts.length === 0 && <p role="alert" className={`${card} mt-2 text-sm`}>Payment accounts are not set up yet. Please contact support and quote your payment code.</p>}
           <div className="mt-2 grid gap-3 sm:grid-cols-3">
-            {PAY_METHODS.map((m) => {
-              const has = existsSync(path.join(process.cwd(), 'public', m.qr))
-              return (
-                <section key={m.id} aria-label={m.name} className={`${card} flex flex-col items-center gap-2 text-center`}>
-                  <h3 className="font-bold">{m.name}</h3>
-                  {has ? <Image src={m.qr} alt={`${m.name} payment QR code`} width={224} height={224} unoptimized className="h-auto w-full max-w-[14rem] rounded-lg" />
-                    : <p className={`rounded-lg bg-[var(--chip)] p-4 text-sm ${muted}`}>QR not set up yet. Add {m.qr} to the public folder.</p>}
-                  <div className="text-sm font-semibold">{m.accountName}</div>
-                  {m.accountNumber && <div className={`text-xs ${muted}`}>{m.accountNumber}</div>}
-                </section>
-              )
-            })}
+            {accounts.map((a) => (
+              <section key={a.id} aria-label={a.label} className={`${card} flex flex-col items-center gap-2 text-center`}>
+                <h3 className="font-bold">{a.label}</h3>
+                {a.qr_url
+                  ? <div role="img" aria-label={`${a.label} payment QR code`} className="aspect-square w-full max-w-[14rem] rounded-lg bg-white bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${a.qr_url})` }} />
+                  : <p className={`rounded-lg bg-[var(--chip)] p-4 text-sm ${muted}`}>No QR code. Use the account number below.</p>}
+                <div className="text-sm font-semibold">{a.account_name}</div>
+                <div className={`text-xs ${muted}`}>{a.bank_name ? `${a.bank_name} · ` : ''}{a.account_number}</div>
+              </section>
+            ))}
           </div>
 
-          <h2 className="mt-4 font-bold">Step 2. Enter your reference number</h2>
-          <p className={`text-sm ${muted}`}>After paying, your payment app shows a reference number on the receipt. Type it here so we can match your payment.</p>
+          <h2 className="mt-4 font-bold">Step 2. Tell us you paid</h2>
+          <p className={`text-sm ${muted}`}>After paying, your payment app shows a reference number on the receipt. Type it here. If the app has no message field, this is how we find your payment.</p>
           <ActionForm action={submitReference} keepOnSuccess className={`${card} mt-2 flex flex-col gap-3`}>
             <input type="hidden" name="payment_id" value={p.id} />
             <label className={label}>Reference number
@@ -86,7 +89,7 @@ export default async function Pay({ params }: { params: Promise<{ id: string }> 
         <div role="status" className={`${card} mt-3`}>
           <PollRefresh seconds={15} />
           <p className="font-semibold">Waiting for confirmation of reference {p.reference_number}.</p>
-          <p className={`mt-1 text-sm ${muted}`}>An admin checks it against the payment account. This page updates by itself when it is confirmed. You can leave and come back to this link.</p>
+          <p className={`mt-1 text-sm ${muted}`}>An admin checks it against the payment account and your code {p.pay_code}. This page updates by itself when it is confirmed. You can leave and come back to this link.</p>
           {p.review_note && <p role="alert" className="mt-2 text-sm font-semibold text-red-700 dark:text-red-400">{p.review_note}</p>}
         </div>
       )}

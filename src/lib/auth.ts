@@ -2,7 +2,7 @@ import { cache } from 'react'
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { isRentalActive } from '@/lib/billing'
-import type { Org, Role } from '@/lib/types'
+import type { Org, Profile, Role } from '@/lib/types'
 
 export type { Role }
 
@@ -13,6 +13,14 @@ export const getUser = cache(async () => {
   return user ? { id: user.id, email: user.email ?? '' } : null
 })
 
+export const getProfile = cache(async (): Promise<Profile | null> => {
+  const u = await getUser()
+  if (!u) return null
+  const sb = await createClient()
+  const { data } = await sb.from('profiles').select('display_name,avatar_url,is_system_admin').eq('id', u.id).maybeSingle()
+  return (data as Profile | null) ?? { display_name: null, avatar_url: null, is_system_admin: false }
+})
+
 export async function requireUser() {
   const u = await getUser()
   if (!u) redirect('/login')
@@ -21,7 +29,7 @@ export async function requireUser() {
 
 export const getOrg = cache(async (slug: string): Promise<Org> => {
   const sb = await createClient()
-  const { data } = await sb.from('organizations').select('id,name,slug,visibility,rental_until').eq('slug', slug).maybeSingle()
+  const { data } = await sb.from('organizations').select('id,name,slug,visibility,rental_until,join_policy').eq('slug', slug).maybeSingle()
   if (!data) notFound() // also what a private group looks like to people outside it
   return data as Org
 })
