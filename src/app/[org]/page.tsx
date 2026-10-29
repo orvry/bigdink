@@ -58,15 +58,15 @@ export default async function GroupHome({ params }: { params: Promise<{ org: str
         )}
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8">
-        <section aria-label="News feed" className="flex min-w-0 flex-col gap-3">
-          <h2 className="text-lg font-bold">News feed</h2>
+      <div className="grid gap-x-8 gap-y-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <h2 className="text-lg font-bold lg:col-start-1 lg:row-start-1">News feed</h2>
+        <section aria-label="News feed" className="flex min-w-0 flex-col gap-3 lg:col-start-1 lg:row-start-2">
           {feed.length === 0 && <p className={`text-sm ${muted}`}>No tournaments yet.{role === 'admin' ? ' Create one under Settings.' : ''}</p>}
           {feed.map((t) => <FeedCard key={t.id} t={t} member={member} registered={registered.has(t.id)} />)}
         </section>
-        <aside className="flex flex-col gap-3 lg:sticky lg:top-20">
-          {user && member && stats && <PersonalStats title="Your stats here" stats={stats} />}
-          {!user && <section className={card}><p className="text-sm"><Link href={`/login?next=${encodeURIComponent(`/${slug}`)}`} className="font-bold text-[color:var(--link)]">Sign in</Link> to see your stats and join tournaments.</p></section>}
+        <aside className="flex min-w-0 flex-col gap-3 lg:col-start-2 lg:row-start-2 lg:self-start lg:sticky lg:top-20">
+          {user && member && stats && <PersonalStats title="Your stats here" stats={stats} variant="side" />}
+          {!user && <section className={card}><h2 className="mb-1 text-lg font-bold">Your stats here</h2><p className="text-sm"><Link href={`/login?next=${encodeURIComponent(`/${slug}`)}`} className="font-bold text-[color:var(--link)]">Sign in</Link> to see your stats and join tournaments.</p></section>}
           <section className={`${card} flex flex-col gap-1`} aria-label="Tournaments">
             <h2 className="mb-1 text-lg font-bold">Tournaments</h2>
             {feed.length === 0 && <p className={`text-sm ${muted}`}>None yet.</p>}

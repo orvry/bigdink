@@ -28,8 +28,8 @@ export default async function OrgLayout({ children, params }: { children: React.
     <div className="min-h-screen lg:pl-64">
       <aside aria-label="Sidebar" className="fixed inset-y-0 left-0 hidden w-64 flex-col gap-6 overflow-y-auto border-r border-[color:var(--line)] bg-[var(--card)] p-4 lg:flex">{sidebar}</aside>
       <div className="flex min-h-screen flex-col">
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-[color:var(--line)] bg-[var(--bg)]/95 px-4 py-2.5 backdrop-blur md:px-8">
-          <MobileMenu>{sidebar}</MobileMenu>
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-[color:var(--line)] bg-[var(--bg)] px-4 py-2.5 md:px-8">
+          <MobileMenu slug={slug} defaultTid={active?.id ?? null}>{sidebar}</MobileMenu>
           <Link href={base} className="flex min-w-0 items-center gap-2 font-semibold lg:hidden"><span className="truncate">{org.name}</span></Link>
           <span className="hidden items-center gap-2 text-sm font-semibold lg:flex">
             {org.name}{org.visibility === 'private' && <span className="rounded-full bg-[var(--chip)] px-2 py-0.5 text-xs font-bold">Private</span>}
@@ -37,7 +37,7 @@ export default async function OrgLayout({ children, params }: { children: React.
           <span className="flex-1" />
           <UserMenu role={role} />
         </header>
-        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-4 md:px-8 md:py-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-4 pb-24 md:px-8 md:py-6 lg:pb-6">
           {!rentalActive && (
             <div role="status" className="rounded-xl bg-[var(--gold)] p-3 text-sm font-semibold text-[#172033]">
               This group’s rental has ended. Viewing and report downloads still work.{' '}
