@@ -49,3 +49,7 @@ body { background: var(--bg); color: var(--ink); }
 .tint-coral { background: var(--tint-coral); color: var(--tint-coral-ink); }
 .tint-gold { background: var(--tint-gold); color: var(--tint-gold-ink); }
 .tabular { font-variant-numeric: tabular-nums; }
+
+/* Progress bar shown while a page loads. It creeps toward the end and finishes when the page arrives. */
+.nav-progress { width: 35%; animation: nav-progress 10s cubic-bezier(.1, .6, .2, 1) forwards; box-shadow: 0 0 8px var(--primary); }
+@keyframes nav-progress { from { width: 0; } to { width: 92%; } }
