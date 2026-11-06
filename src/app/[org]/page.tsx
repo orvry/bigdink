@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Settings } from 'lucide-react'
+import { Play, Settings } from 'lucide-react'
 import { getContext } from '@/lib/data'
 import { getUser, roleIn } from '@/lib/auth'
 import { isMemberRole } from '@/lib/roles'
@@ -22,12 +22,14 @@ export default async function GroupHome({ params }: { params: Promise<{ org: str
   const role = await roleIn(org.id)
   const member = isMemberRole(role)
 
-  const [{ data: cards }, { data: regs }, stats, invite] = await Promise.all([
-    sb.from('tournament_cards').select('*').eq('org_id', org.id).order('created_at', { ascending: false }),
+  const [{ data: cards }, { data: regs }, stats, invite, { data: sess }] = await Promise.all([
+    sb.from('tournament_cards').select('*').eq('org_id', org.id).eq('kind', 'tournament').order('created_at', { ascending: false }),
     user ? sb.from('tournament_registrations').select('tournament_id').eq('user_id', user.id).in('status', ['pending', 'approved']) : Promise.resolve({ data: [] as never[] }),
     user && member ? getMyStats(sb, org.id) : Promise.resolve(null),
     member ? sb.rpc('ensure_invite', { p_org: org.id }) : Promise.resolve({ data: null }),
+    sb.from('tournament_cards').select('*').eq('org_id', org.id).eq('kind', 'session').order('created_at', { ascending: false }).limit(8),
   ])
+  const sessions = (sess ?? []) as FeedRow[]
   const feed = (cards ?? []) as FeedRow[]
   const registered = new Set(((regs ?? []) as unknown as { tournament_id: string }[]).map((r) => r.tournament_id))
   const code = invite.data as string | null
@@ -44,6 +46,7 @@ export default async function GroupHome({ params }: { params: Promise<{ org: str
           </p>
         </div>
         {!member && <Link href={`/${slug}/join`} className="inline-flex h-12 items-center rounded-xl bg-[var(--primary)] px-5 font-bold text-[color:var(--on-primary)]">Join Group</Link>}
+        {member && <Link href={`/${slug}/s/new`} className={btn2}><Play aria-hidden="true" size={18} />Start a game</Link>}
         {role === 'admin' && <Link href={`/${slug}/admin`} className={btn2}><Settings aria-hidden="true" size={18} />Manage</Link>}
         {member && code && (
           <details className="relative">
@@ -67,6 +70,17 @@ export default async function GroupHome({ params }: { params: Promise<{ org: str
         <aside className="flex min-w-0 flex-col gap-3 lg:col-start-2 lg:row-start-2 lg:self-start lg:sticky lg:top-20">
           {user && member && stats && <PersonalStats title="Your stats here" stats={stats} variant="side" />}
           {!user && <section className={card}><h2 className="mb-1 text-lg font-bold">Your stats here</h2><p className="text-sm"><Link href={`/login?next=${encodeURIComponent(`/${slug}`)}`} className="font-bold text-[color:var(--link)]">Sign in</Link> to see your stats and join tournaments.</p></section>}
+          {sessions.length > 0 && (
+            <section className={`${card} flex flex-col gap-1`} aria-label="Casual games">
+              <h2 className="mb-1 text-lg font-bold">Casual games</h2>
+              {sessions.map((x) => (
+                <Link key={x.id} href={`/${slug}/s/${x.id}`} className="flex min-h-11 items-center gap-2 rounded-xl px-2 hover:bg-[var(--chip)]">
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{x.name}</span><span className={`block text-xs ${muted}`}>{x.date ?? ''} · {x.games} game{x.games === 1 ? '' : 's'}{x.live > 0 ? ' · live' : ''}</span></span>
+                  {x.visibility === 'public' ? <span className="tint-blue rounded-full px-2 py-0.5 text-xs font-bold">Public</span> : <span className="rounded-full bg-[var(--chip)] px-2 py-0.5 text-xs font-bold">Private</span>}
+                </Link>
+              ))}
+            </section>
+          )}
           <section className={`${card} flex flex-col gap-1`} aria-label="Tournaments">
             <h2 className="mb-1 text-lg font-bold">Tournaments</h2>
             {feed.length === 0 && <p className={`text-sm ${muted}`}>None yet.</p>}

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireRole } from '@/lib/auth'
 import { getContext } from '@/lib/data'
-import { createTournament, addBracket, setActiveTournament, setVisibility } from '@/app/actions'
+import { createTournament, addBracket, setActiveTournament, setVisibility, setGroupSettings } from '@/app/actions'
 import { fmtWhen } from '@/lib/billing'
 import ActionForm from '@/components/ActionForm'
 import SubmitButton from '@/components/SubmitButton'
@@ -44,11 +44,18 @@ export default async function Admin({ params }: { params: Promise<{ org: string 
       </div>
       <p className={`text-sm ${muted}`}>Rental active until {org.rental_until ? fmtWhen(org.rental_until) : 'n/a'}.</p>
       {active && <a href={`${base}/t/${active.id}/report`} download className={`${btn2} md:max-w-2xl`}>Download PDF report</a>}
-      <div className={`${card} flex flex-col gap-2 md:max-w-2xl`}>
-        <h2 className="font-bold">Group visibility</h2>
-        <VisibilityForm kind="org" id={org.id} value={org.visibility} />
-        <p className={`text-xs ${muted}`}>A private group is hidden from the feed and only its members can open it, including all its tournaments.</p>
-      </div>
+      <ActionForm action={setGroupSettings} keepOnSuccess className={`${card} flex flex-col gap-3 md:max-w-2xl`}>
+        <h2 className="font-bold">Group settings</h2>
+        <input type="hidden" name="org_id" value={org.id} />
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className={label}>Who can see the group
+            <select name="visibility" defaultValue={org.visibility} className={input}><option value="public">Public: listed in the feed</option><option value="private">Private: members only</option></select></label>
+          <label className={label}>Who can join
+            <select name="join_policy" defaultValue={org.join_policy} className={input}><option value="open">Anyone signed in (public groups)</option><option value="invite">Only people with an invite link</option></select></label>
+        </div>
+        <SubmitButton pendingText="Saving…" className={`${btn2} self-start`}>Save group settings</SubmitButton>
+        <p className={`text-xs ${muted}`}>A private group is hidden from the feed and only its members can open it. Members can always share an invite link from the group page.</p>
+      </ActionForm>
       <div className="grid items-start gap-4 md:grid-cols-2">
         <div className="flex flex-col gap-2">
           {tournaments.map((t) => (

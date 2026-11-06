@@ -17,8 +17,8 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
   const u = await getUser()
   if (!u) return null
   const sb = await createClient()
-  const { data } = await sb.from('profiles').select('display_name,avatar_url,is_system_admin').eq('id', u.id).maybeSingle()
-  return (data as Profile | null) ?? { display_name: null, avatar_url: null, is_system_admin: false }
+  const { data } = await sb.from('profiles').select('display_name,avatar_url,is_system_admin,handle').eq('id', u.id).maybeSingle()
+  return (data as Profile | null) ?? { display_name: null, avatar_url: null, is_system_admin: false, handle: null }
 })
 
 export async function requireUser() {

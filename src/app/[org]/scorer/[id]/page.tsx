@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { requireRole } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
@@ -16,11 +16,15 @@ export const dynamic = 'force-dynamic'
 
 export default async function ScoreGame({ params }: { params: Promise<{ org: string; id: string }> }) {
   const { org: slug, id } = await params
-  await requireRole(slug, ['admin', 'scorer'])
+  const { user, role } = await requireRole(slug, ['admin', 'scorer', 'member'])
   const sb = await createClient()
   const { data } = await sb.from('matches').select(MATCH_SELECT).eq('id', id).single()
   const m = data as Match | null
   if (!m || !m.team1 || !m.team2) notFound()
+  const isSession = m.tournament?.kind === 'session'
+  // plain members may only score a casual game they started themselves
+  if (role === 'member' && !(isSession && m.tournament?.created_by === user.id)) redirect('/denied')
+  const back = isSession ? `/${slug}/s/${m.tournament_id}` : `/${slug}/scorer`
   const { team1, team2 } = m
   const { ptw, wb } = rulesOf(m)
   const { data: ev } = await sb.from('score_events').select('team_id,player').eq('match_id', id)
@@ -51,7 +55,7 @@ export default async function ScoreGame({ params }: { params: Promise<{ org: str
   }
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Group', href: `/${slug}` }, { label: 'Score', href: `/${slug}/scorer` }, { label: `Game ${m.game_no}` }]} />
+      <Breadcrumbs items={[{ label: 'Group', href: `/${slug}` }, { label: isSession ? 'Casual game' : 'Score', href: back }, { label: `Game ${m.game_no}` }]} />
       <div className="flex items-center justify-between gap-3">
         <p className={`text-sm ${muted}`}>Game {m.game_no} · {m.round}{m.court ? ` · Court ${m.court}` : ''} · First to {ptw}, win by {wb}</p>
         <StatusChip status={m.status} />
@@ -84,7 +88,7 @@ export default async function ScoreGame({ params }: { params: Promise<{ org: str
             <SubmitButton pendingText={paused ? 'Resuming…' : 'Pausing…'} disabled={m.status === 'scheduled'} className={`${btn2} w-full`}>{paused ? 'Resume game' : 'Pause game'}</SubmitButton>
           </form>
         )}
-        {final ? <Link href={`/${slug}/scorer`} className={`${btn} w-full`}>Back to games</Link> : null}
+        {final ? <Link href={back} className={`${btn} w-full`}>Back to games</Link> : null}
         <ShareButton path={`/${slug}/t/${m.tournament_id}/live/${id}`} title={`${team1.name} vs ${team2.name}`} />
       </div>
       {!final && <p className={`text-xs ${muted}`}>The game can’t be ended by hand. It finishes when a team reaches {ptw} with a {wb}-point lead. Until then you can pause.</p>}

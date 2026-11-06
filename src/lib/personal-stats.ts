@@ -5,7 +5,7 @@ type Sb = Awaited<ReturnType<typeof createClient>>
 
 /** The signed-in user's totals, overall or inside one group. Counts only games where they were linked to a team seat. */
 export async function getMyStats(sb: Sb, orgId?: string): Promise<PersonalStats> {
-  let q = sb.from('my_tournament_stats').select('tournament_id,games,wins,points,champion')
+  let q = sb.from('my_tournament_stats').select('tournament_id,games,wins,points,champion,kind')
   if (orgId) q = q.eq('org_id', orgId)
   const rows = (await q).data ?? []
   const games = rows.reduce((a, r) => a + (r.games as number), 0)
@@ -15,5 +15,6 @@ export async function getMyStats(sb: Sb, orgId?: string): Promise<PersonalStats>
     points: rows.reduce((a, r) => a + (r.points as number), 0),
     titles: rows.filter((r) => r.champion).length,
     winRate: games ? Math.round((wins / games) * 100) : null,
+    casualGames: rows.filter((r) => r.kind === 'session').reduce((a, r) => a + (r.games as number), 0),
   }
 }

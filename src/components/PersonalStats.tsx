@@ -9,7 +9,7 @@ import type { PersonalStats as Stats } from '@/lib/types'
  */
 export default function PersonalStats({ title, stats, variant = 'wide' }: { title: string; stats: Stats; variant?: 'wide' | 'side' }) {
   const items = [
-    { label: 'Games played', value: stats.games, sub: `${stats.wins} won · ${stats.losses} lost`, icon: <Users size={20} />, tint: 'blue' as const },
+    { label: 'Games played', value: stats.games, sub: `${stats.wins} won · ${stats.losses} lost${stats.casualGames ? ` · ${stats.casualGames} casual` : ''}`, icon: <Users size={20} />, tint: 'blue' as const },
     { label: 'Win rate', value: stats.winRate === null ? '–' : `${stats.winRate}%`, sub: `${stats.tournaments} tournament${stats.tournaments === 1 ? '' : 's'}`, icon: <Target size={20} />, tint: 'teal' as const },
     { label: 'Points won', value: stats.points, sub: 'in your games', icon: <Medal size={20} />, tint: 'coral' as const },
     { label: 'Titles', value: stats.titles, sub: 'tournaments won', icon: <Trophy size={20} />, tint: 'gold' as const },

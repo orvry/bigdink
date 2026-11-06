@@ -150,13 +150,25 @@ export async function submitReference(_p: FormState, fd: FormData): Promise<Form
   return { ok: 'Reference received. We are checking your payment.' }
 }
 
-/** Public or private, for a group or one of its tournaments. */
+/** Public or private for one tournament. (Group settings use setGroupSettings.) */
 export async function setVisibility(_p: FormState, fd: FormData): Promise<FormState> {
   await requireUser()
   const sb = await createClient()
   const visibility = s(fd, 'visibility') === 'private' ? 'private' : 'public'
-  const table = s(fd, 'kind') === 'org' ? 'organizations' : 'tournaments'
-  return run(`Now ${visibility}.`, () => sb.from(table).update({ visibility }).eq('id', s(fd, 'id')))
+  const { data, error } = await sb.from('tournaments').update({ visibility }).eq('id', s(fd, 'id')).select('id')
+  if (error) return { error: friendly(error.message) }
+  if (!data?.length) return { error: "You don't have permission to do that, or this group's rental has ended." }
+  refresh()
+  return { ok: `Now ${visibility}.` }
+}
+
+/** Group visibility and who can join. Goes through a database function so admins can never touch the rental dates. */
+export async function setGroupSettings(_p: FormState, fd: FormData): Promise<FormState> {
+  await requireUser()
+  const sb = await createClient()
+  return run('Group settings saved.', () => sb.rpc('set_group_settings', {
+    p_org: s(fd, 'org_id'), p_visibility: s(fd, 'visibility') === 'private' ? 'private' : 'public', p_join_policy: s(fd, 'join_policy') === 'invite' ? 'invite' : 'open',
+  }))
 }
 
 /* ---- scorer ---- */
@@ -234,12 +246,20 @@ export async function setActiveTournament(id: string) {
   refresh()
 }
 
+/** A select value like "<user id>::<name>". Returns the person, or null when "typed name only" was chosen. */
+const pickPerson = (fd: FormData, key: string) => {
+  const [id, ...rest] = s(fd, key).split('::')
+  return /^[0-9a-f-]{36}$/i.test(id) ? { id, name: rest.join('::') } : null
+}
+
 export async function addTeam(_p: FormState, fd: FormData): Promise<FormState> {
   await requireUser()
   const sb = await createClient()
+  const p1 = pickPerson(fd, 'player1_pick'), p2 = pickPerson(fd, 'player2_pick')
   return run(`Team ${s(fd, 'name')} saved.`, () => sb.from('teams').insert({
-    tournament_id: s(fd, 'tournament_id'), bracket_id: s(fd, 'bracket_id'), name: s(fd, 'name'),
-    seed: n(fd, 'seed') ?? 0, player1: s(fd, 'player1'), player2: s(fd, 'player2'),
+    tournament_id: s(fd, 'tournament_id'), bracket_id: s(fd, 'bracket_id'), name: s(fd, 'name'), seed: n(fd, 'seed') ?? 0,
+    player1: s(fd, 'player1') || p1?.name || '', player2: s(fd, 'player2') || p2?.name || '',
+    player1_user: p1?.id ?? null, player2_user: p2?.id ?? null,
   }))
 }
 
@@ -470,4 +490,92 @@ export async function grantRentalDays(_p: FormState, fd: FormData): Promise<Form
   if (done.error) return { error: done.error.message }
   revalidatePath('/', 'layout')
   return { ok: `${days} day${days === 1 ? '' : 's'} added.` }
+}
+
+/* ---- casual games (sessions) ---- */
+export async function createSession(_p: FormState, fd: FormData): Promise<FormState> {
+  await requireUser()
+  const sb = await createClient()
+  const { data, error } = await sb.rpc('create_session', {
+    p_org: s(fd, 'org_id'), p_name: s(fd, 'name'), p_format: s(fd, 'format') === 'single' ? 'single' : 'session',
+    p_ptw: n(fd, 'points_to_win') ?? 11, p_wb: n(fd, 'win_by') ?? 2, p_visibility: s(fd, 'visibility') === 'public' ? 'public' : 'private',
+  })
+  if (error) return { error: friendly(error.message) }
+  refresh()
+  redirect(`/${s(fd, 'slug')}/s/${data}`)
+}
+
+/** One side of a game: each seat is a typed name, a picked group member, or both. */
+const sideOf = (fd: FormData, side: 1 | 2) => {
+  const seats = ([1, 2] as const).map((i) => {
+    const typed = s(fd, `s${side}p${i}`)
+    const pick = pickPerson(fd, `s${side}u${i}`)
+    const name = typed || pick?.name || ''
+    return name ? { name, uid: pick?.id ?? null } : null
+  }).filter((x): x is { name: string; uid: string | null } => x !== null)
+  return { names: seats.map((x) => x.name), users: seats.map((x) => x.uid) }
+}
+
+export async function addSessionGame(_p: FormState, fd: FormData): Promise<FormState> {
+  await requireUser()
+  const sb = await createClient()
+  const a = sideOf(fd, 1), b = sideOf(fd, 2)
+  if (a.names.length === 0 || b.names.length === 0) return { error: 'Each side needs at least one player.' }
+  return run('Game added. Tap Score to start.', () => sb.rpc('add_session_game', {
+    p_session: s(fd, 'session_id'), p_names1: a.names, p_users1: a.users, p_names2: b.names, p_users2: b.users, p_court: s(fd, 'court'),
+  }))
+}
+
+export async function finishSession(sessionId: string) {
+  await requireUser()
+  const sb = await createClient()
+  await sb.rpc('finish_session', { p_session: sessionId })
+  refresh()
+}
+
+export async function setSessionVisibility(_p: FormState, fd: FormData): Promise<FormState> {
+  await requireUser()
+  const sb = await createClient()
+  const v = s(fd, 'visibility') === 'public' ? 'public' : 'private'
+  return run(v === 'public' ? 'Now public. It can appear in the feed.' : 'Now private.', () => sb.rpc('set_session_visibility', { p_session: s(fd, 'session_id'), p_visibility: v }))
+}
+
+/* ---- profile and account ---- */
+export async function updateProfile(_p: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser()
+  const handle = s(fd, 'handle').toLowerCase()
+  if (handle && !/^[a-z0-9_]{3,20}$/.test(handle)) return { error: 'The handle needs 3 to 20 letters, numbers or underscores.' }
+  const patch: Record<string, unknown> = {
+    display_name: s(fd, 'display_name').slice(0, 60) || null, handle: handle || null,
+    bio: s(fd, 'bio').slice(0, 160) || null, city: s(fd, 'city').slice(0, 60) || null,
+    stats_visibility: ['everyone', 'members', 'me'].includes(s(fd, 'stats_visibility')) ? s(fd, 'stats_visibility') : 'everyone',
+  }
+  if (fd.get('remove_photo') === 'on') patch.avatar_url = null
+  const file = fd.get('photo')
+  if (isUpload(file)) {
+    const up = await uploadImage(file, 'avatars')
+    if ('error' in up) return { error: up.error }
+    patch.avatar_url = up.url
+  }
+  const { error } = await adminClient().from('profiles').update(patch).eq('id', user.id)
+  if (error) return { error: /duplicate key/i.test(error.message) ? 'That handle is already taken.' : error.message }
+  refresh()
+  return { ok: 'Profile saved.' }
+}
+
+/** Deletes the account and personal details. Game results stay, with the player's name as typed. */
+export async function deleteAccount(_p: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireUser()
+  if (s(fd, 'confirm') !== 'DELETE') return { error: 'Type DELETE in capital letters to confirm.' }
+  const admin = adminClient()
+  const { data: p } = await admin.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle()
+  const marker = '/object/public/images/'
+  if (p?.avatar_url?.includes(marker)) await admin.storage.from('images').remove([decodeURIComponent(p.avatar_url.split(marker)[1].split('?')[0])])
+  const { error } = await admin.auth.admin.deleteUser(user.id)
+  if (error) {
+    return { error: /at least one admin|Database error/i.test(error.message) ? 'Your account could not be deleted. If you are the only admin of a group, make someone else an admin first, then try again.' : error.message }
+  }
+  const sb = await createClient()
+  await sb.auth.signOut()
+  redirect('/')
 }

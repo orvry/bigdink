@@ -30,6 +30,10 @@ export default async function UserMenu({ role }: { role?: Role }) {
         <div className="px-1 text-sm"><div className="truncate font-semibold">{user.email}</div></div>
         <ThemeToggle />
         <Link href="/" className="rounded-lg px-2 py-2.5 text-sm font-semibold hover:bg-[var(--chip)]">All tournaments and groups</Link>
+        {profile?.handle
+          ? <Link href={`/u/${profile.handle}`} className="rounded-lg px-2 py-2.5 text-sm font-semibold hover:bg-[var(--chip)]">My profile</Link>
+          : <Link href="/settings/profile" className="rounded-lg px-2 py-2.5 text-sm font-semibold hover:bg-[var(--chip)]">Set up my profile</Link>}
+        <Link href="/settings/profile" className="rounded-lg px-2 py-2.5 text-sm font-semibold hover:bg-[var(--chip)]">Profile settings</Link>
         {profile?.is_system_admin && <Link href="/system" className="rounded-lg px-2 py-2.5 text-sm font-semibold hover:bg-[var(--chip)]">System admin</Link>}
         <form action={signOut}>
           <SubmitButton pendingText="Signing out…" className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--line2)] text-sm font-semibold"><LogOut aria-hidden="true" size={16} />Sign out</SubmitButton>

@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { getTournamentContext, pickBracket } from '@/lib/data'
 import { computeStandings } from '@/lib/standings'
 import BracketTabs from '@/components/BracketTabs'
@@ -10,7 +11,8 @@ export const dynamic = 'force-dynamic'
 export default async function Standings({ params, searchParams }: { params: Promise<{ org: string; tid: string }>; searchParams: Promise<{ b?: string }> }) {
   const { org: slug, tid } = await params
   const { b } = await searchParams
-  const { sb, org, brackets } = await getTournamentContext(slug, tid)
+  const { sb, org, tournament: tn, brackets } = await getTournamentContext(slug, tid)
+  if (tn.kind === 'session') redirect(`/${slug}/s/${tid}`)
   const bracket = pickBracket(brackets, b)
   if (!bracket) return <p>No bracket yet.</p>
   const [{ data: teams }, { data: matches }] = await Promise.all([

@@ -5,7 +5,9 @@ import type { FeedRow } from '@/lib/types'
 
 /** One tournament in a feed (home page and group page). member and registered tell it which buttons to show. */
 export default function FeedCard({ t, member, registered }: { t: FeedRow; member: boolean; registered: boolean }) {
-  const status = t.champion ? 'Completed' : t.live > 0 ? 'Live now' : t.played > 0 ? 'In progress' : 'Upcoming'
+  const casual = t.kind === 'session'
+  const href = casual ? `/${t.org_slug}/s/${t.id}` : `/${t.org_slug}/t/${t.id}`
+  const status = casual ? (t.live > 0 ? 'Live now' : t.played > 0 ? 'Played' : 'Casual game') : t.champion ? 'Completed' : t.live > 0 ? 'Live now' : t.played > 0 ? 'In progress' : 'Upcoming'
   const chip = t.live > 0 && !t.champion ? 'bg-[var(--live)] text-[color:var(--on-live)]' : 'bg-[var(--chip)]'
   return (
     <article className={`${card} flex flex-col gap-3 overflow-hidden !p-0`}>
@@ -19,14 +21,14 @@ export default function FeedCard({ t, member, registered }: { t: FeedRow; member
           </div>
           <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${chip}`}>{status}</span>
         </header>
-        <h2 className="text-lg font-bold">{t.name}</h2>
+        <h2 className="text-lg font-bold">{casual && <span className="tint-blue mr-2 rounded-full px-2.5 py-0.5 align-middle text-xs font-bold">Casual game</span>}{t.name}</h2>
         {t.description && <p className={`line-clamp-2 text-sm ${muted}`}>{t.description}</p>}
         <p className={`text-sm ${muted}`}>{t.teams} teams · {t.games} games · {t.played} played{t.live > 0 ? ` · ${t.live} in play now` : ''}</p>
         {t.champion && <p className="text-sm"><span className={muted}>Champions:</span> <b>{t.champion}</b></p>}
         <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-          <Link href={`/${t.org_slug}/t/${t.id}`} className="inline-flex h-10 items-center rounded-xl border border-[color:var(--ink)] px-4">{t.live > 0 ? 'Watch live' : 'View tournament'}</Link>
-          <Link href={`/${t.org_slug}/t/${t.id}/standings`} className="px-2 py-2.5 text-[color:var(--link)]">Standings</Link>
-          {!t.champion && <span className="ml-auto flex flex-wrap items-center gap-2"><JoinActions slug={t.org_slug} tid={t.id} member={member} registered={registered} open={t.registration_open} /></span>}
+          <Link href={href} className="inline-flex h-10 items-center rounded-xl border border-[color:var(--ink)] px-4">{t.live > 0 ? 'Watch live' : casual ? 'View games' : 'View tournament'}</Link>
+          {!casual && <Link href={`/${t.org_slug}/t/${t.id}/standings`} className="px-2 py-2.5 text-[color:var(--link)]">Standings</Link>}
+          {!casual && !t.champion && <span className="ml-auto flex flex-wrap items-center gap-2"><JoinActions slug={t.org_slug} tid={t.id} member={member} registered={registered} open={t.registration_open} /></span>}
         </div>
       </div>
     </article>

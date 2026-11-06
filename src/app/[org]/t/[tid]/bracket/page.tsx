@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getTournamentContext, pickBracket, MATCH_SELECT, slotLabel } from '@/lib/data'
 import { computeMvps, getChampion } from '@/lib/stats'
@@ -31,7 +32,8 @@ function Game({ m, base }: { m: Match; base: string }) {
 export default async function Bracket({ params, searchParams }: { params: Promise<{ org: string; tid: string }>; searchParams: Promise<{ b?: string }> }) {
   const { org: slug, tid } = await params
   const { b } = await searchParams
-  const { sb, org, brackets } = await getTournamentContext(slug, tid)
+  const { sb, org, tournament: tn, brackets } = await getTournamentContext(slug, tid)
+  if (tn.kind === 'session') redirect(`/${slug}/s/${tid}`)
   const bracket = pickBracket(brackets, b)
   const base = `/${slug}/t/${tid}`
   if (!bracket) return <p>No bracket yet.</p>

@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getTournamentContext } from '@/lib/data'
 import { getUser, roleIn } from '@/lib/auth'
@@ -15,6 +16,7 @@ export const dynamic = 'force-dynamic'
 export default async function JoinTournament({ params }: { params: Promise<{ org: string; tid: string }> }) {
   const { org: slug, tid } = await params
   const { sb, org, tournament } = await getTournamentContext(slug, tid)
+  if (tn.kind === 'session') redirect(`/${slug}/s/${tid}`)
   const user = await getUser()
   const member = isMemberRole(await roleIn(org.id))
   const here = `/${slug}/t/${tid}/join`

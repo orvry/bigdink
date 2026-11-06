@@ -14,8 +14,8 @@ import type { FeedRow } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 const LIMIT = 30
 
-export default async function Feed({ searchParams }: { searchParams: Promise<{ tab?: string; q?: string }> }) {
-  const { tab, q = '' } = await searchParams
+export default async function Feed({ searchParams }: { searchParams: Promise<{ tab?: string; q?: string; type?: string }> }) {
+  const { tab, q = '', type = 'all' } = await searchParams
   const groupsTab = tab === 'groups'
   const term = q.replace(/[%,()*]/g, ' ').trim()
   const sb = await createClient()
@@ -40,6 +40,8 @@ export default async function Feed({ searchParams }: { searchParams: Promise<{ t
   } else {
     let fq = sb.from('tournament_feed').select('*').order('live', { ascending: false }).order('created_at', { ascending: false }).limit(LIMIT)
     if (term) fq = fq.or(`name.ilike.%${term}%,org_name.ilike.%${term}%`)
+    if (type === 'tournament') fq = fq.eq('kind', 'tournament')
+    if (type === 'session') fq = fq.eq('kind', 'session')
     feed = ((await fq).data ?? []) as FeedRow[]
   }
   const tabCls = (on: boolean) => `flex h-11 items-center justify-center rounded-xl px-5 text-sm font-semibold ${on ? 'bg-[var(--solid)] text-[color:var(--on-solid)]' : 'border border-[color:var(--ink)]'}`
@@ -79,6 +81,14 @@ export default async function Feed({ searchParams }: { searchParams: Promise<{ t
             </form>
           </div>
 
+          {!groupsTab && (
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Show">
+              {([['all', 'All'], ['tournament', 'Tournaments'], ['session', 'Casual games']] as const).map(([k, text]) => (
+                <Link key={k} href={`/?type=${k}${term ? `&q=${encodeURIComponent(term)}` : ''}`} aria-current={type === k ? 'true' : undefined}
+                  className={`inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold ${type === k ? 'bg-[var(--nav-active-bg)] text-[color:var(--nav-active-text)]' : 'border border-[color:var(--line2)]'}`}>{text}</Link>
+              ))}
+            </div>
+          )}
           {groupsTab ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {groups.map((g) => (

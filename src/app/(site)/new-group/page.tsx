@@ -2,6 +2,7 @@ import { requireUser } from '@/lib/auth'
 import { startGroupPayment } from '@/app/actions'
 import { PRICE_PER_DAY, PAYMENTS_MODE, MAX_DAYS } from '@/lib/billing'
 import { money } from '@/lib/format'
+import { LEGAL } from '@/lib/legal'
 import ActionForm from '@/components/ActionForm'
 import SubmitButton from '@/components/SubmitButton'
 import RentalPicker from '@/components/RentalPicker'
@@ -36,6 +37,7 @@ export default async function NewGroup() {
         </fieldset>
         <RentalPicker pricePerDay={PRICE_PER_DAY} max={MAX_DAYS} />
         <SubmitButton pendingText="Continuing…" className={btn}>Continue to payment</SubmitButton>
+        <p className={`text-center text-xs ${muted}`}>By continuing you agree to the <a href={LEGAL.terms} target="_blank" rel="noopener noreferrer" className="font-semibold text-[color:var(--link)] underline">Terms of Service</a>.</p>
       </ActionForm>
     </div>
   )

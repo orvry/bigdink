@@ -7,6 +7,7 @@ import ActionForm from '@/components/ActionForm'
 import SubmitButton from '@/components/SubmitButton'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import { BRAND } from '@/lib/brand'
+import { LEGAL } from '@/lib/legal'
 import { btn, btn2, input, label, num, muted } from '@/lib/ui'
 
 function LoginForm() {
@@ -35,6 +36,7 @@ function LoginForm() {
           <SubmitButton name="intent" value="signin" pendingText="Please wait…" className={btn}>Sign in</SubmitButton>
           <SubmitButton name="intent" value="signup" pendingText="Please wait…" className={btn2}>Create account</SubmitButton>
         </ActionForm>
+        <p className={`text-center text-xs ${muted}`}>By continuing you agree to the <a href={LEGAL.terms} target="_blank" rel="noopener noreferrer" className="font-semibold text-[color:var(--link)] underline">Terms of Service</a> and the <a href={LEGAL.privacy} target="_blank" rel="noopener noreferrer" className="font-semibold text-[color:var(--link)] underline">Privacy Policy</a>.</p>
         <Link href="/" className="py-3 text-center font-bold text-[color:var(--link)]">Just watching? Browse live scores</Link>
       </div>
     </div>

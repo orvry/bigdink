@@ -1,10 +1,10 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, ClipboardList, CreditCard, Layers, LayoutDashboard, Monitor, Network, Settings, Swords, Trophy, UserCog, Users, Wallet } from 'lucide-react'
+import { CalendarDays, ClipboardList, Play, CreditCard, Layers, LayoutDashboard, Monitor, Network, Settings, Swords, Trophy, UserCog, Users, Wallet } from 'lucide-react'
 import type { Role } from '@/lib/types'
 
-const ICONS = { dashboard: LayoutDashboard, standings: Trophy, brackets: Network, screen: Monitor, tournaments: Layers, matches: Swords, teams: Users, schedule: CalendarDays, expenses: Wallet, registrations: ClipboardList, members: UserCog, billing: CreditCard, settings: Settings }
+const ICONS = { dashboard: LayoutDashboard, standings: Trophy, brackets: Network, screen: Monitor, tournaments: Layers, matches: Swords, teams: Users, schedule: CalendarDays, expenses: Wallet, registrations: ClipboardList, session: Play, members: UserCog, billing: CreditCard, settings: Settings }
 
 type Item = { label: string; icon: keyof typeof ICONS; scope: 't' | 'org'; path: string; exact?: boolean; show: boolean }
 
@@ -14,10 +14,14 @@ export default function SidebarNav({ slug, defaultTid, role, rentalActive }: { s
   const tid = pathname.match(/^\/[^/]+\/t\/([^/]+)/)?.[1] ?? defaultTid
   const score = rentalActive && (role === 'admin' || role === 'scorer')
   const manage = rentalActive && role === 'admin'
+  const isMember = rentalActive && role !== 'viewer'
   const hasT = Boolean(tid)
 
   const groups: { title?: string; items: Item[] }[] = [
-    { items: [{ label: 'Tournaments', icon: 'tournaments', scope: 'org', path: '', exact: true, show: true }] },
+    { items: [
+      { label: 'Tournaments', icon: 'tournaments', scope: 'org', path: '', exact: true, show: true },
+      { label: 'Start a game', icon: 'session', scope: 'org', path: '/s/new', exact: true, show: isMember },
+    ] },
     { title: 'Tournament', items: [
       { label: 'Dashboard', icon: 'dashboard', scope: 't', path: '', exact: true, show: hasT },
       { label: 'Standings', icon: 'standings', scope: 't', path: '/standings', show: hasT },

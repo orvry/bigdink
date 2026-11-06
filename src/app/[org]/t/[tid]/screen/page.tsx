@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getTournamentContext, MATCH_SELECT, slotLabel, rulesOf } from '@/lib/data'
 import { computeStandings } from '@/lib/standings'
@@ -15,6 +16,7 @@ export const dynamic = 'force-dynamic'
 export default async function Screen({ params }: { params: Promise<{ org: string; tid: string }> }) {
   const { org: slug, tid } = await params
   const { sb, org, tournament, brackets } = await getTournamentContext(slug, tid)
+  if (tournament.kind === 'session') redirect(`/${slug}/s/${tid}`)
   const [{ data: ms }, { data: tm }] = await Promise.all([
     sb.from('matches').select(MATCH_SELECT).eq('tournament_id', tid).order('game_no'),
     sb.from('teams').select('*').eq('tournament_id', tid),

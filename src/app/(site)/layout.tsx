@@ -1,5 +1,6 @@
 import Logo from '@/components/Logo'
 import UserMenu from '@/components/UserMenu'
+import Footer from '@/components/Footer'
 
 const wrap = 'mx-auto w-full max-w-md md:max-w-3xl lg:max-w-5xl'
 
@@ -14,6 +15,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         </div>
       </header>
       <main className={`${wrap} flex flex-col gap-4 px-5 py-4 md:px-8 md:py-6`}>{children}</main>
+      <div className={`${wrap} px-5 md:px-8`}><Footer /></div>
     </>
   )
 }

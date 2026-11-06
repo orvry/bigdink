@@ -11,7 +11,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function Live({ params }: { params: Promise<{ org: string; tid: string; id: string }> }) {
   const { org: slug, tid, id } = await params
-  const { sb, org } = await getTournamentContext(slug, tid)
+  const { sb, org, tournament } = await getTournamentContext(slug, tid)
+  const casual = tournament.kind === 'session'
   const { data } = await sb.from('matches').select(MATCH_SELECT).eq('id', id).eq('tournament_id', tid).maybeSingle()
   if (!data) notFound()
   const m = data as Match
@@ -29,12 +30,12 @@ export default async function Live({ params }: { params: Promise<{ org: string; 
 
   return (
     <>
-      <Breadcrumbs items={[{ label: org.name, href: `/${slug}` }, { label: 'Tournament', href: base }, { label: 'Live game' }]} />
+      <Breadcrumbs items={[{ label: org.name, href: `/${slug}` }, { label: casual ? 'Casual game' : 'Tournament', href: casual ? `/${slug}/s/${tid}` : base }, { label: 'Live game' }]} />
       <p className={`text-sm ${muted}`}>Game {m.game_no} · {m.round}{m.court ? ` · Court ${m.court}` : ''}</p>
       <LiveBoard initial={m} name1={slotLabel(m, 1)} name2={slotLabel(m, 2)} ptw={ptw} wb={wb} players={players} initialEvents={ev ?? []} />
       <p className={`text-center text-sm ${muted}`}>First to {ptw}, win by {wb}</p>
       <div className="md:mx-auto md:w-full md:max-w-sm"><ShareButton path={`${base}/live/${id}`} title={`${slotLabel(m, 1)} vs ${slotLabel(m, 2)}`} /></div>
-      <Link href={`${base}/standings`} className={`${btn} md:self-center`}>View standings</Link>
+      <Link href={casual ? `/${slug}/s/${tid}` : `${base}/standings`} className={`${btn} md:self-center`}>{casual ? 'Back to the games' : 'View standings'}</Link>
     </>
   )
 }

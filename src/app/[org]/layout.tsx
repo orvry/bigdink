@@ -7,6 +7,7 @@ import MobileMenu from '@/components/MobileMenu'
 import SidebarNav from '@/components/SidebarNav'
 import UserMenu from '@/components/UserMenu'
 import TournamentSwitcher from '@/components/TournamentSwitcher'
+import Footer from '@/components/Footer'
 
 /** The group shell: sidebar with icons on the left, top bar with the user menu, then the page. */
 export default async function OrgLayout({ children, params }: { children: React.ReactNode; params: Promise<{ org: string }> }) {
@@ -50,6 +51,7 @@ export default async function OrgLayout({ children, params }: { children: React.
             </div>
           )}
           {children}
+          <Footer className="mt-auto" />
         </div>
       </div>
     </div>

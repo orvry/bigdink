@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, CalendarClock, ChevronRight, ClipboardCheck, FileDown, Monitor, Network, Plus, Trophy, UserRound, Users, Wallet, Check } from 'lucide-react'
 import { getTournamentContext, MATCH_SELECT, slotLabel } from '@/lib/data'
@@ -19,6 +20,7 @@ export const dynamic = 'force-dynamic'
 export default async function Dashboard({ params }: { params: Promise<{ org: string; tid: string }> }) {
   const { org: slug, tid } = await params
   const { sb, org, tournament, brackets } = await getTournamentContext(slug, tid)
+  if (tournament.kind === 'session') redirect(`/${slug}/s/${tid}`)
   const base = `/${slug}/t/${tid}`
   const role = await roleIn(org.id)
   const rentalActive = isRentalActive(org)

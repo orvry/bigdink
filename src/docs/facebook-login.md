@@ -11,7 +11,10 @@ Meta changes its console and rules from time to time, so follow its current scre
    `https://YOUR-PROJECT.supabase.co/auth/v1/callback`
    (Supabase shows the exact address on the Facebook provider screen. Copy it from there.)
 4. Under App settings, Basic: copy the **App ID** and **App Secret**.
-5. Fill in the privacy policy address and a data deletion instruction. Meta requires both before the app can go live.
+5. Fill in the policy addresses Meta asks for. They are already published:
+   - Privacy Policy URL: `https://orvry.github.io/rallyclub/privacy.html`
+   - Terms of Service URL: `https://orvry.github.io/rallyclub/terms.html`
+   - Data deletion instructions: use the privacy policy address above, and make sure that page explains that people can delete their account in the app (Settings, then Profile, then Delete account) or by email.
 6. The app asks only for `public_profile` and `email`, which normally need no review. Switch the app from Development to **Live** when ready. In Development mode only people you add as testers can sign in.
 
 ## 2. Supabase side
